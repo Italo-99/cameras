@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+from tomllib import TOMLDecodeError
 import rospy
 from std_msgs.msg import String
 from sensor_msgs.msg import Image
@@ -11,7 +12,7 @@ def image_Aldepth_callback(msg):
 
     # Print the size information
     rospy.loginfo(" ")
-    rospy.loginfo("Received image with size: %dx%d", msg.width, msg.height)
+    rospy.loginfo("Received aligned depth image with size: %dx%d", msg.width, msg.height)
 
     # Print encoding of pixels
     rospy.loginfo("Encoding: %s", msg.encoding)
@@ -50,7 +51,7 @@ def image_color_callback(msg):
 
     # Print the size information
     rospy.loginfo(" ")
-    rospy.loginfo("Received image with size: %dx%d", msg.width, msg.height)
+    rospy.loginfo("Received Color image with size: %dx%d", msg.width, msg.height)
 
     # Print encoding of pixels
     rospy.loginfo("Encoding: %s", msg.encoding)
@@ -95,7 +96,7 @@ def image_depth_callback(msg):
 
     # Print the size information
     rospy.loginfo(" ")
-    rospy.loginfo("Received image with size: %dx%d", msg.width, msg.height)
+    rospy.loginfo("Received depth image with size: %dx%d", msg.width, msg.height)
 
     # Print encoding of pixels
     rospy.loginfo("Encoding: %s", msg.encoding)
@@ -133,13 +134,13 @@ def image_depth_callback(msg):
 
 def main():
     # Initialize the ROS node
-    rospy.init_node('image_saver_cv')
+    rospy.init_node('ex_image_saver_cv')
 
     # Create a subscriber for the image aligned depth topic
-    # sub_al_depth = rospy.Subscriber('/camera/aligned_depth_to_color/image_raw', Image, image_Aldepth_callback)
+    sub_al_depth = rospy.Subscriber('/camera/aligned_depth_to_color/image_raw', Image, image_Aldepth_callback)
 
     # Create a subscriber for the image aligned depth topic
-    # sub_color = rospy.Subscriber('/camera/color/image_raw', Image, image_color_callback)
+    sub_color = rospy.Subscriber('/camera/color/image_raw', Image, image_color_callback)
 
     # Create a subscriber for the image depth rectified raw topic
     sub_depth = rospy.Subscriber('/camera/depth/image_rect_raw', Image, image_depth_callback)
@@ -149,3 +150,9 @@ def main():
 
 if __name__ == '__main__':
     main()
+
+# TODO:
+    # 1) write a launcher for the camera d435i with minimal args
+    # 2) write above functions in a class
+    # 3) import fastdlo/core libraries in a menu node python script
+    # 4) in this menu, choices are: make a photo, classify cables, get spline distances
