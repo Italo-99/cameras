@@ -7,6 +7,8 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   std_msgs
   geometry_msgs
+  sensor_msgs
+  cv_bridge
 )
 
 catkin_package(
@@ -18,7 +20,7 @@ include_directories(
   ${catkin_INCLUDE_DIRS}
 )
 
-# Add manipulator class node
-#add_executable(manipulator_planner src/manipulator_planner.cpp src/manipulator_planner_node.cpp)
-#target_link_libraries(manipulator_planner ${catkin_LIBRARIES})
-#add_dependencies(manipulator_planner ${catkin_EXPORTED_TARGETS})
+# Add image saver class node
+add_executable(image_saver src/image_saver.cpp)
+target_link_libraries(image_saver ${catkin_LIBRARIES})
+add_dependencies(image_saver ${catkin_EXPORTED_TARGETS})
