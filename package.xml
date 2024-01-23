@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+
+<package format="3">
+  <name>cameras</name>
+  <version>1.2.4</version>
+  <description> Pkg container of useful ROS1 files for smart cameras used for Italo Almirante's internship project</description>
+  <maintainer email="255778@studenti.unimore.it">Italo Almirante</maintainer>
+  <license>Apache License 2.0</license>
+
+  <url>http://ros.org/wiki/foo_core</url>
+  <author>Italo Almirante</author>
+
+  <buildtool_depend>catkin</buildtool_depend>
+  <build_depend>roscpp</build_depend>
+  <build_depend>rospy</build_depend>
+  <build_depend>std_msgs</build_depend>
+  <build_export_depend>roscpp</build_export_depend>
+  <build_export_depend>rospy</build_export_depend>
+  <build_export_depend>std_msgs</build_export_depend>
+  <exec_depend>roscpp</exec_depend>
+  <exec_depend>rospy</exec_depend>
+  <exec_depend>std_msgs</exec_depend>
+
+  <export>
+
+  </export>
+</package>
