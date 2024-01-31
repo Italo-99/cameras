@@ -131,7 +131,7 @@ def image_depth_callback(msg):
         
     return img
 
-
+# Main example function
 def main():
     # Initialize the ROS node
     rospy.init_node('ex_image_saver_cv')
