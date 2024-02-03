@@ -1,0 +1,9 @@
+<launch>
+
+  <!-- Launch usb_cam node with camera calibration file -->
+  <include file="$(find usb_cam)/launch/usb_cam-test.launch"/>
+
+  <!-- Launch RViz with usb_cam configuration -->
+  <node name="rviz" pkg="rviz" type="rviz" args="-d $(find cameras)/rviz/usb_cam.rviz" />
+
+</launch>
