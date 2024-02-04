@@ -1,15 +1,22 @@
 <launch>
 
-<!-- Usb camera launch -->
-<include file="$(find cameras)/launch/usb_cam.launch"/>
+	<!-- Usb camera launch -->
+	<include file="$(find cameras)/launch/usb_cam.launch"/>
 
-<!-- Aruco detector launch -->
+	<!-- Publish a dummy config camera matrix on camera info topic -->
+	<node pkg="cameras" type="fake_camera_info_pub.py" name="camera_info_publisher" />
+
+	<!-- Publish a dummy tf beteen map and usb_cam to activate pose detectioin -->
+	<node pkg="tf2_ros" type="static_transform_publisher" name="usb_cam_tf_publisher"
+		args="0 0 0 -0.5 0.5 -0.5 0.5 map usb_cam" />
+
+	<!-- Aruco detector launch -->
 	<arg name="marker_size" default="14.4" />
 	<arg name="max_new_marker_error" default="0.08" />
 	<arg name="max_track_error" default="0.2" />
 	<arg name="cam_image_topic" default="/usb_cam/image_raw" />
 	<arg name="cam_info_topic" default="/usb_cam/camera_info" />
-	<arg name="output_frame" default="usb_cam" />
+	<arg name="output_frame" default="map" />
 
 	<node name="ar_track_alvar" pkg="ar_track_alvar" type="individualMarkersNoKinect" respawn="false" output="screen">
 		<param name="marker_size"           type="double" value="$(arg marker_size)" />
@@ -20,9 +27,5 @@
 		<remap from="camera_image"  to="$(arg cam_image_topic)" />
 		<remap from="camera_info"   to="$(arg cam_info_topic)" />
 	</node>
-
-    <!-- Publish a dummy tf beteen map and usb_cam to activate pose detectioin -->
-    <node pkg="tf2_ros" type="static_transform_publisher" name="usb_cam_tf_publisher"
-        args="0 0 0 0 0 0 1 map usb_cam" />
 
 </launch>
