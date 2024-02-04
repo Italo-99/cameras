@@ -1,9 +1,20 @@
 <launch>
 
+  <!-- Pass cam params -->
+  <arg name="video_device" default="/dev/video0" />
+  <arg name="image_width"  default="640" />
+  <arg name="image_height" default="480" />
+  <!-- Pass rviz config file path -->
+  <arg name="rviz_path" default="usb_cam"/>
+
   <!-- Launch usb_cam node with camera calibration file -->
-  <include file="$(find cameras)/launch/usb_cam_node.launch" />
+  <include file="$(find cameras)/launch/usb_cam_node.launch" >
+    <arg name="video_device" value="$(arg video_device)"/>
+    <arg name="image_width"  value="$(arg image_width)"/>
+    <arg name="image_height" value="$(arg image_height)"/>
+  </include>
   
   <!-- Launch RViz with usb_cam configuration -->
-  <node name="rviz" pkg="rviz" type="rviz" args="-d $(find cameras)/rviz/usb_cam.rviz" />
+  <node name="rviz" pkg="rviz" type="rviz" args="-d $(find cameras)/rviz/$(arg rviz_path).rviz" />
 
 </launch>

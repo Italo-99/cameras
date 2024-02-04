@@ -1,7 +1,26 @@
 <launch>
 
+	<!-- Usb camera params -->
+	<arg name="video_device" default="/dev/video0" />
+	<arg name="image_width"  default="640" />
+	<arg name="image_height" default="480" />
+	<!-- Pass rviz config file path -->
+	<arg name="rviz_path" default="usb_cam"/>
+	<!-- Ar-Tag detector params -->
+	<arg name="marker_size" default="14.4" />
+	<arg name="max_new_marker_error" default="0.08" />
+	<arg name="max_track_error" default="0.2" />
+	<arg name="cam_image_topic" default="/usb_cam/image_raw" />
+	<arg name="cam_info_topic" default="/usb_cam/camera_info" />
+	<arg name="output_frame" default="map" />
+
 	<!-- Usb camera launch -->
-	<include file="$(find cameras)/launch/usb_cam.launch"/>
+	<include file="$(find cameras)/launch/usb_cam.launch">
+		<arg name="video_device" value="$(arg video_device)"/>
+		<arg name="image_width"  value="$(arg image_width)"/>
+		<arg name="image_height" value="$(arg image_height)"/>
+		<arg name="rviz_path" 	 value="$(arg rviz_path)"/>
+  	</include>
 
 	<!-- Publish a dummy config camera matrix on camera info topic -->
 	<node pkg="cameras" type="fake_camera_info_pub.py" name="camera_info_publisher" />
@@ -10,14 +29,7 @@
 	<node pkg="tf2_ros" type="static_transform_publisher" name="usb_cam_tf_publisher"
 		args="0 0 0 -0.5 0.5 -0.5 0.5 map usb_cam" />
 
-	<!-- Aruco detector launch -->
-	<arg name="marker_size" default="14.4" />
-	<arg name="max_new_marker_error" default="0.08" />
-	<arg name="max_track_error" default="0.2" />
-	<arg name="cam_image_topic" default="/usb_cam/image_raw" />
-	<arg name="cam_info_topic" default="/usb_cam/camera_info" />
-	<arg name="output_frame" default="map" />
-
+	<!-- Ar-Tag detector node -->
 	<node name="ar_track_alvar" pkg="ar_track_alvar" type="individualMarkersNoKinect" respawn="false" output="screen">
 		<param name="marker_size"           type="double" value="$(arg marker_size)" />
 		<param name="max_new_marker_error"  type="double" value="$(arg max_new_marker_error)" />
