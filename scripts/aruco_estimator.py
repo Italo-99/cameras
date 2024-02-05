@@ -11,14 +11,16 @@ This node executes three main activities:
 The evaluation with camera depth info is compared with fiducial transforms.
 """
 
-from    cables_detection.srv    import Cable2D_Poses
+from macpath import normcase
+from    cables_detection.srv    import Cables2D_Poses
 from    cameras.srv             import Cable3D_Poses
 from    cv_bridge               import CvBridge
 import  cv2
 from    fiducial_msgs.msg       import FiducialArray, FiducialTransformArray
+from    geometry_msgs.msg       import PoseArray,Pose
 import  math
 import  rospy
-from    std_msgs.msg            import String
+from    std_msgs.msg            import Float32
 from    sensor_msgs.msg         import Image
 
 class aruco_estimator:
@@ -51,7 +53,7 @@ class aruco_estimator:
 
         # Connect as Cable2D poses client to get aruco centroids values
         rospy.wait_for_service('/centroid_aruco')
-        self.service_proxy = rospy.ServiceProxy('/centroid_aruco', Cable2D_Poses)
+        self.service_proxy = rospy.ServiceProxy('/centroid_aruco', Cables2D_Poses)
         rospy.loginfo('Connected to centroid_aruco server')
 
         # Create a server that receives
@@ -63,11 +65,11 @@ class aruco_estimator:
 
         poses = []
         # Iterate over recevied centroids
-        for centroid in centroids:
-            rospy.loginfo("Centroids received: [%s , %s]", centroid[0], centroid[1])
+        for centroid in centroids.poses:
+            rospy.loginfo("Centroids received: [%s , %s]", centroid.position.x, centroid.position.y)
             # Pixel coordinate of the centroid
-            u = centroid[0]
-            v = centroid[1]
+            u = centroid.position.x
+            v = centroid.position.y
             # Get the distance of that centroid
             d = dist2D_pixels[int(u),int(v)]
             # Compute direction vector
@@ -75,9 +77,11 @@ class aruco_estimator:
             ty = (v-self.cy)/self.fy
             tz = 1
             # Normalize the vector to get the direction versor
-            norm = math.sqrt(tx^2+ty^2+tz^2)
+            norm = math.sqrt(tx*tx+ty*ty+tz*tz)
             # Compute the poses
-            [x,y,z] = d*[tz,-tx,-ty]/norm
+            x = +d*tz/norm
+            y = -d*tx/norm
+            z = -d*ty/norm
             poses.append([x,y,z])
             rospy.loginfo("Pose computed by the model: x = %s, y = %s, z = %s", x,y,z)
             rospy.loginfo("Pose computed by aruco pkg: x = %s, y = %s, z = %s", 
@@ -101,9 +105,19 @@ class aruco_estimator:
 
         # Process the response
         poses = self.poses_depth_model(response.centroids,dist2D_pixels)
+        print(len(poses))
+        print(len(poses[0]))
 
         # Return poses response
-        return poses
+        response = PoseArray()
+        for k in range(len(poses[0])):
+            response_pose = Pose()
+            response_pose.position.x = poses[k][0]
+            response_pose.position.y = poses[k][1]
+            response_pose.position.z = poses[k][2]
+            response.poses.append(response_pose)
+
+        return response
 
     # Callback to transform callback of aruco detect pkg
     def fiducial_transforms_callback(self,msg):
