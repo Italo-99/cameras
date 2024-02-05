@@ -1,0 +1,3 @@
+geometry_msgs/PoseStamped   camera_pose
+---
+float32[] poses

@@ -2,7 +2,7 @@
 
     <!-- Rviz simulation params -->
     <arg name="rviz"        default="true"/>
-    <arg name="rviz_path"   default="$(find realsense2_description)/rviz/urdf"/>    
+    <arg name="rviz_path"   default="$(find cameras)/rviz/d435i"/>    
 
     <!-- Custom d435i args -->
         <arg name="reconnect_timeout" value="1"/>
@@ -10,14 +10,15 @@
         <arg name="depth_fps" value="30"/>
         <arg name="color_fps" value="30"/>
         <arg name="enable_gyro" value="false"/>
-        <arg name="enable_accel" value="false"/>
+        <arg name="enable_accel" value="false"/>    
         <!-- <arg name="accel_fps" value="250"/>
         <arg name="gyro_fps" value="400"/> -->
-        <!-- <arg name="enable_infra1" value="false"/> -->
+        <arg name="enable_infra1" value="false"/>
+        <arg name="enable_infra2" value="false"/>
         <!-- <arg name="fisheye_fps" value="30"/> -->
         <arg name="enable_sync" value="true"/>
         <arg name="enable_pointcloud" value="false"/>
-        <!-- <arg name="filters" value="pointcloud"/> -->
+        <arg name="filters" value="pointcloud"/>
         <!-- <arg name="allow_no_texture_points" value="true"/> -->
         <!-- <arg name="ordered_pc" value="true"/> -->
 
@@ -40,17 +41,17 @@
 
     <arg name="infra_width"        default="640"/>
     <arg name="infra_height"       default="480"/>
-    <arg name="enable_infra1"       default="true"/>
-    <arg name="enable_infra2"       default="true"/>
+    <!-- <arg name="enable_infra1"       default="true"/>
+    <arg name="enable_infra2"       default="true"/> -->
 
     <arg name="color_width"         default="640"/>
     <arg name="color_height"        default="480"/>
     <arg name="enable_color"        default="true"/>
 
     <arg name="fisheye_fps"         default="30"/>
-    <arg name="depth_fps"           default="30"/>
+    <!-- <arg name="depth_fps"           default="30"/> -->
     <arg name="infra_fps"           default="30"/>
-    <arg name="color_fps"           default="30"/>
+    <!-- <arg name="color_fps"           default="30"/> -->
     <arg name="gyro_fps"            default="400"/>
     <arg name="accel_fps"           default="250"/>
     <!-- <arg name="enable_gyro"         default="true"/>

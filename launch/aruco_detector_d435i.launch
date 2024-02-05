@@ -16,12 +16,12 @@
 	<!-- d435i camera launch -->
 	<include file="$(find cameras)/launch/d435i.launch">
 		<arg name="rviz" 		value="true"/>
-		<!-- <arg name="rviz_path"  	value="$(find cameras)/rviz/d435i_aruco"/> -->
+		<arg name="rviz_path"  	value="$(find cameras)/rviz/d435i_aruco"/>
   	</include>
 
 	<!-- Publish a dummy tf beteen map and usb_cam to activate pose detectioin -->
 	<node pkg="tf2_ros" type="static_transform_publisher" name="d435i_cam_tf_publisher"
-		args="0 0 0 0 0 0 1 map camera_link" />
+		args="0 0 0 0 0 0 1 map base_link" />
 
 	<!-- Aruco_detect node -->
 	<node pkg="aruco_detect" name="aruco_detect"

@@ -1,14 +1,29 @@
 cmake_minimum_required(VERSION 2.8.3)
+cmake_policy(SET CMP0048 NEW)
 project(cameras)
 
 add_compile_options(-std=c++11)
 
 find_package(catkin REQUIRED COMPONENTS
-  roscpp
-  std_msgs
-  geometry_msgs
-  sensor_msgs
+  cables_detection    # MY CUSTOM PKG
   cv_bridge
+  fiducial_msgs
+  geometry_msgs
+  message_generation
+  roscpp
+  rospy
+  sensor_msgs
+  std_msgs
+)
+
+add_service_files(
+  FILES
+  Cable3D_Poses.srv
+)
+
+generate_messages(
+  DEPENDENCIES
+  geometry_msgs
 )
 
 catkin_package(
