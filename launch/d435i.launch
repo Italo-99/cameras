@@ -17,10 +17,10 @@
         <arg name="enable_infra2" value="false"/>
         <!-- <arg name="fisheye_fps" value="30"/> -->
         <arg name="enable_sync" value="true"/>
-        <arg name="enable_pointcloud" value="false"/>
         <arg name="filters" value="pointcloud"/>
-        <!-- <arg name="allow_no_texture_points" value="true"/> -->
-        <!-- <arg name="ordered_pc" value="true"/> -->
+        <arg name="enable_pointcloud" value="false"/>
+        <arg name="allow_no_texture_points" value="false"/>
+        <arg name="ordered_pc" value="false"/>
 
   
     <!-- Default realsense launch args -->
@@ -73,7 +73,7 @@
     <arg name="topic_odom_in"             default="odom_in"/>
     <arg name="calib_odom_file"           default=""/>
     <arg name="publish_odom_tf"           default="true"/>
-    <arg name="allow_no_texture_points"   default="false"/>
+    <!-- <arg name="allow_no_texture_points"   default="false"/> -->
 
     <!-- Launch real sense camera node -->
     <group ns="$(arg camera)">
@@ -126,6 +126,8 @@
         <arg name="calib_odom_file"          value="$(arg calib_odom_file)"/>
         <arg name="publish_odom_tf"          value="$(arg publish_odom_tf)"/>
         <arg name="allow_no_texture_points"  value="$(arg allow_no_texture_points)"/>
+        <arg name="ordered_pc"               value="$(arg ordered_pc)"/>
+
         </include>
     </group>
 

@@ -50,7 +50,7 @@ class Centroid_ArucoServer:
             new_point.position.y = yc
             centroids.poses.append(new_point)
             fiducial_id = fiducial.fiducial_id
-            rospy.loginfo("Fiducial ID: %d, Centroid: %s", fiducial_id, centroids.poses[-1].position)
+            rospy.loginfo("Fiducial ID: %d\nCentroid: %s", fiducial_id, centroids.poses[-1].position)
 
         return centroids
     
