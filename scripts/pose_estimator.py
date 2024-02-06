@@ -19,21 +19,27 @@ from    fiducial_msgs.msg       import FiducialArray, FiducialTransformArray
 from    geometry_msgs.msg       import PoseArray,Pose
 import  math
 import  numpy as np
-import  rospy
+import  rospy,rospkg
 from    std_msgs.msg            import Float32
 from    sensor_msgs.msg         import Image
 
-class aruco_estimator:
+class pose_estimator:
 
     def __init__(self):
 
+        # Test on already saved depth image
+        rospack = rospkg.RosPack()
+        package_path = rospack.get_path('cameras')
+        depth_image_path = package_path + "/images/cables_depth/"
+        self.depth_img_ = cv2.resize(cv2.imread(depth_image_path+
+                          "cables0.jpg", cv2.IMREAD_UNCHANGED),(640,480))
+
         # Initialize global class variables and params
-        self.depth_img_   = Image()         # depth image
+        # self.depth_img_   = Image()         # depth image
         self.color_img_   = Image()         # color image
-        self.gt_poses_    = np.empty((0,3)) # ground truth poses received by aruco pkg
         self.depth_topic_ = '/camera/aligned_depth_to_color/image_raw'  # PARAM
         self.color_topic_ = '/camera/color/image_raw'                   # PARAM
-        self.freq_rate_   = 10                                          # PARAM
+        loop_rate         = 10                                          # Set loop rate PARAM
         self.fx           = 609.9419555664062                           # PARAM
         self.fy           = 608.6234130859375                           # PARAM
         self.cx           = 324.0304870605469                           # PARAM
@@ -43,7 +49,11 @@ class aruco_estimator:
         self.cam_to_opt_z = 0.  # z offset from base_link to camera_color_optical_frame PARAM
         
         # Initialize the ROS node
-        rospy.init_node('aruco_estimator_node')
+        rospy.init_node('pose_estimator_node')
+        spin_rate         = rospy.Rate(loop_rate)
+
+        # Pose array publisher for RVIZ visualization purposes
+        self.pub = rospy.Publisher('/pose_array_topic', PoseArray, queue_size=10)
 
         # Create a subscriber for the image aligned depth topic PARAM
         self.sub_al_depth_ = rospy.Subscriber(self.depth_topic_, Image, self.image_Aldepth_callback)
@@ -51,23 +61,23 @@ class aruco_estimator:
         # Create a subscriber for the image aligned depth topic PARAM
         self.sub_color_ = rospy.Subscriber(self.color_topic_, Image, self.image_color_callback)
 
-        # Subscribe to the fiducial_transforms topic
-        rospy.Subscriber('/fiducial_transforms', FiducialTransformArray, self.fiducial_transforms_callback)
-
         # Connect as Cable2D poses client to get aruco centroids values
-        rospy.wait_for_service('/centroid_aruco')
-        self.service_proxy = rospy.ServiceProxy('/centroid_aruco', Cables2D_Poses)
-        rospy.loginfo('Connected to centroid_aruco server')
+        rospy.wait_for_service('/fastdlo')
+        self.service_proxy = rospy.ServiceProxy('/fastdlo', Cables2D_Poses)
+        rospy.loginfo('Connected to fastdlo server')
 
         # Create a server that receives
-        rospy.Service('aruco_estimator', Cable3D_Poses, self.handle_3d_poses)
-        rospy.loginfo('Ready to compute aruco 3D poses')
+        rospy.Service('pose3D_estimator', Cable3D_Poses, self.handle_3d_poses)
+        rospy.loginfo('Ready to compute 3D poses')
+
+        # ROS python spinner
+        while not rospy.is_shutdown():
+            spin_rate.sleep()
 
     # Depth distance model computation
     def poses_depth_model(self,centroids,dist2D_pixels):
 
         poses = np.empty((0,3))
-        index = 0
         # Iterate over recevied centroids
         for centroid in centroids.poses:
             rospy.loginfo("Centroids received: [%s , %s]", centroid.position.x, centroid.position.y)
@@ -91,10 +101,7 @@ class aruco_estimator:
             z = d*tz/norm
             new_pose = np.array([x,y,z]).reshape(1,3)
             poses = np.append(poses,new_pose,axis=0)
-            rospy.loginfo("Pose computed by the model: x = %s, y = %s, z = %s", x,y,z)
-            rospy.loginfo("Pose computed by aruco pkg: x = %s, y = %s, z = %s", 
-                          self.gt_poses_[index][0],self.gt_poses_[index][1],self.gt_poses_[index][2])
-            index += 1
+            rospy.loginfo("Centroid 3D pose: x = %s, y = %s, z = %s", x,y,z)
 
         return poses
     
@@ -112,147 +119,44 @@ class aruco_estimator:
         depth_img = self.depth_img_
         dist2D_pixels = CvBridge().imgmsg_to_cv2(depth_img, depth_img.encoding)
 
-        # Compute the position of the detected points referred to camera optical frame
-        poses = self.poses_depth_model(response.centroids,dist2D_pixels)
+        # Iterate over detected cables
+        response3D = []
 
-        # Get camera pose
-        cam_x = req.camera_pose.pose.position.x
-        cam_y = req.camera_pose.pose.position.y
-        cam_z = req.camera_pose.pose.position.z
+        for k in range(len(response3D)):
 
-        # Return poses response
-        response = PoseArray()
-        for k in range(len(poses)):
-            response_pose = Pose()
-            response_pose.position.x = poses[k][0] + cam_x + self.cam_to_opt_x
-            response_pose.position.y = poses[k][1] + cam_y + self.cam_to_opt_y
-            response_pose.position.z = poses[k][2] + cam_z + self.cam_to_opt_z
-            response.poses.append(response_pose)
+            # Compute the position of the detected points referred to camera optical frame
+            poses = self.poses_depth_model(response3D.centroids[k],dist2D_pixels)
 
-        return response
+            # Get camera pose
+            cam_x = req.camera_pose.pose.position.x
+            cam_y = req.camera_pose.pose.position.y
+            cam_z = req.camera_pose.pose.position.z
 
-    # Callback to transform callback of aruco detect pkg
-    def fiducial_transforms_callback(self,msg):
-
-        # Clear previous (x,y,z) poses
-        self.gt_poses_ = np.empty((0,3))
-
-        # Add estimated poses
-        for transform in msg.transforms:
+            # Return poses response
+            response3D_cable = PoseArray()
+            for k in range(len(poses)):
+                response_pose = Pose()
+                response_pose.position.x = poses[k][0] + cam_x + self.cam_to_opt_x
+                response_pose.position.y = poses[k][1] + cam_y + self.cam_to_opt_y
+                response_pose.position.z = poses[k][2] + cam_z + self.cam_to_opt_z
+                response3D_cable.poses.append(response_pose)
             
-            x = transform.transform.translation.x
-            y = transform.transform.translation.y
-            z = transform.transform.translation.z
-            new_fiducial = np.array([x,y,z]).reshape(1,3)
-            self.gt_poses_ = np.append(self.gt_poses_,new_fiducial, axis=0)
-            
-            # orientation = transform.transform.rotation
-            # fiducial_id = transform.fiducial_id
-            # rospy.loginfo("Fiducial ID: %d, Pose: [%f, %f, %f], Orientation: [%f, %f, %f, %f]",
-            #             fiducial_id,
-            #             pose.x, pose.y, pose.z,
-            #             orientation.x, orientation.y, orientation.z, orientation.w)
- 
+            response3D.append(response3D_cable)
+
+        self.pub.publish(response3D[0])
+
+        return response3D
+
     # Callback to depth images
     def image_Aldepth_callback(self,msg):
 
         self.depth_img_ = msg
-
-        #     # Print the size information
-        #     rospy.loginfo(" ")
-        #     rospy.loginfo("Received aligned depth image with size: %dx%d", msg.width, msg.height)
-
-        #     # Print encoding of pixels
-        #     rospy.loginfo("Encoding: %s", msg.encoding)
-
-        #     # Print step size
-        #     rospy.loginfo("Image steps in bytes: %d", msg.step)
-
-        #     # Print data size
-        #     rospy.loginfo("Data format with size: %d=%dx%d", 
-        #                     len(msg.data), msg.step, len(msg.data)/msg.step)
-
-        #     # This data should be interpreted in this way:
-        #     # 16UC1: 16 bits (2 bytes) compose a 16-bit unsigned int value 
-        #     #        for a single pixel to express distance in mm
-
-        #     # Convert ROS Image message to OpenCV image
-        #     img = CvBridge().imgmsg_to_cv2(msg, msg.encoding)
-        #     # cv2.imshow("Image window",img)
-        #     # cv2.waitKey(3)
-
-        #     if (msg.encoding == "16UC1"):
-
-        #         # Return image 16UC1 size and one sample depth information 
-        #         rospy.loginfo("Img size: %dx%d",len(img[0]),len(img))
-
-        #         rospy.loginfo("Central pixel point is at a distance of %d mm",
-        #                     img[int(msg.width/2)][int(msg.height/2)])
-                
-        #             # Save cv image
-        #         file_path = "src/cameras/images/Aldepth.jpg"
-        #         cv2.imwrite(file_path, img)
-                
-        #     return img
 
     # Callback to color images
     def image_color_callback(self,msg):
 
         self.color_img_ = msg
 
-        #     # Print the size information
-        #     rospy.loginfo(" ")
-        #     rospy.loginfo("Received Color image with size: %dx%d", msg.width, msg.height)
-
-        #     # Print encoding of pixels
-        #     rospy.loginfo("Encoding: %s", msg.encoding)
-
-        #     # Print step size
-        #     rospy.loginfo("Image steps in bytes: %d", msg.step)
-
-        #     # Print data size
-        #     rospy.loginfo("Data format with size: %d=%dx%d", 
-        #                     len(msg.data), msg.step, len(msg.data)/msg.step)
-
-        #     # This data should be interpreted in this way:
-        #     # rgb8: uint8 for each color info (red, green and blue) 
-        #     #        for a single pixel to express its color
-
-        #     # Convert ROS Image message to OpenCV image
-        #     img = CvBridge().imgmsg_to_cv2(msg, msg.encoding)
-        #     # cv2.imshow("Image window",img)
-        #     # cv2.waitKey(3)
-
-        #     if (msg.encoding == "rgb8"):
-
-        #         # Return image 16UC1 size and one sample depth information 
-        #         rospy.loginfo("Img size: %dx%dx%d",len(img[0]),len(img),len(img[0][0]))
-
-        #         rospy.loginfo("Central pixel point has a red quantity of %d",
-        #                     img[int(msg.width/2)][int(msg.height/2)][0])
-                
-        #         rospy.loginfo("Central pixel point has a green quantity of %d",
-        #                     img[int(msg.width/2)][int(msg.height/2)][1])
-                
-        #         rospy.loginfo("Central pixel point has a blue quantity of %d",
-        #                     img[int(msg.width/2)][int(msg.height/2)][2])
-                
-        #         # Save cv image
-        #         file_path = "src/cameras/images/color.jpg"
-        #         cv2.imwrite(file_path, img)
-                
-        #     return img
-
-    # ROS python spinner
-    def spinner(self):
-
-        # Set loop rate
-        spin_rate = rospy.Rate(self.freq_rate_)
-        # Run ROS spinner
-        while not rospy.is_shutdown():
-            spin_rate.sleep()
-
 if __name__ == '__main__':
 
-    a = aruco_estimator()
-    a.spinner()
+    pose_estimator()
