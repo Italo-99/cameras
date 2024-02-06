@@ -1,0 +1,12 @@
+<launch>
+	
+	<!-- Aruco detector with d435i camera launch -->
+	<include file="$(find cameras)/launch/d435i/aruco_detector_d435i.launch" />
+
+	<!-- Centroid aruco calculation -->
+	<node name="centroid_arucoserver" pkg="cameras" type="centroid_arucoserver.py" output="screen" />
+
+	<!-- Aruco pose estimator -->
+	<node name="aruco_estimator_node" pkg="cameras" type="aruco_pose_estimator.py" output="screen" />
+
+</launch>

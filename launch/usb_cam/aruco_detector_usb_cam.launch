@@ -21,7 +21,7 @@
 	<arg name="verbose" default="false"/>
 
 	<!-- Usb camera launch -->
-	<include file="$(find cameras)/launch/usb_cam.launch">
+	<include file="$(find cameras)/launch/usb_cam/usb_cam.launch">
 		<arg name="video_device" value="$(arg video_device)"/>
 		<arg name="image_width"  value="$(arg image_width)"/>
 		<arg name="image_height" value="$(arg image_height)"/>

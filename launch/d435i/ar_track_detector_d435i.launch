@@ -1,11 +1,5 @@
 <launch>
 
-	<!-- Usb camera params -->
-	<arg name="video_device" default="/dev/video0" />
-	<arg name="image_width"  default="640" />
-	<arg name="image_height" default="480" />
-	<!-- Pass rviz config file path -->
-	<arg name="rviz_path" default="usb_cam"/>
 	<!-- Ar-Tag detector params -->
 	<arg name="marker_size" default="14.4" />
 	<arg name="max_new_marker_error" default="0.08" />
@@ -13,21 +7,16 @@
 	<arg name="cam_image_topic" default="/usb_cam/image_raw" />
 	<arg name="cam_info_topic" default="/usb_cam/camera_info" />
 	<arg name="output_frame" default="map" />
-
-	<!-- Usb camera launch -->
-	<include file="$(find cameras)/launch/usb_cam.launch">
-		<arg name="video_device" value="$(arg video_device)"/>
-		<arg name="image_width"  value="$(arg image_width)"/>
-		<arg name="image_height" value="$(arg image_height)"/>
-		<arg name="rviz_path" 	 value="$(arg rviz_path)"/>
+	
+	<!-- d435i camera launch -->
+	<include file="$(find cameras)/launch/d435i/d435i.launch">
+		<arg name="rviz" 		value="true"/>
+		<arg name="rviz_path"  	value="$(find cameras)/rviz/d435i_aruco"/>
   	</include>
 
-	<!-- Publish a dummy config camera matrix on camera info topic -->
-	<node pkg="cameras" type="fake_camera_info_pub.py" name="camera_info_publisher" />
-
 	<!-- Publish a dummy tf beteen map and usb_cam to activate pose detectioin -->
-	<node pkg="tf2_ros" type="static_transform_publisher" name="usb_cam_tf_publisher"
-		args="0 0 0 -0.5 0.5 -0.5 0.5 map usb_cam" />
+	<node pkg="tf2_ros" type="static_transform_publisher" name="d435i_cam_tf_publisher"
+		args="0 0 0 0 0 0 1 map base_link" />
 
 	<!-- Ar-Tag detector node -->
 	<node name="ar_track_alvar" pkg="ar_track_alvar" type="individualMarkersNoKinect" respawn="false" output="screen">

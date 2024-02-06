@@ -116,9 +116,9 @@ class aruco_estimator:
         poses = self.poses_depth_model(response.centroids,dist2D_pixels)
 
         # Get camera pose
-        cam_x = req.pose.position.x
-        cam_y = req.pose.position.y
-        cam_z = req.pose.position.z
+        cam_x = req.camera_pose.pose.position.x
+        cam_y = req.camera_pose.pose.position.y
+        cam_z = req.camera_pose.pose.position.z
 
         # Return poses response
         response = PoseArray()

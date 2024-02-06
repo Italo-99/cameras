@@ -14,7 +14,7 @@
 	<arg name="verbose" default="false"/>
 	
 	<!-- d435i camera launch -->
-	<include file="$(find cameras)/launch/d435i.launch">
+	<include file="$(find cameras)/launch/d435i/d435i.launch">
 		<arg name="rviz" 		value="true"/>
 		<arg name="rviz_path"  	value="$(find cameras)/rviz/d435i_aruco"/>
   	</include>
