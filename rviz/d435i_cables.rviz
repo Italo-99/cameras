@@ -175,14 +175,14 @@ Visualization Manager:
       Class: rviz/Pose
       Color: 32; 74; 135
       Enabled: true
-      Head Length: 0.30000001192092896
-      Head Radius: 0.10000000149011612
+      Head Length: 0.009999999776482582
+      Head Radius: 0.009999999776482582
       Name: Pose
       Queue Size: 10
-      Shaft Length: 1
-      Shaft Radius: 0.05000000074505806
+      Shaft Length: 0.10000000149011612
+      Shaft Radius: 0.004999999888241291
       Shape: Arrow
-      Topic: ""
+      Topic: /grabbing_pose
       Unreliable: false
       Value: true
   Enabled: true
@@ -213,7 +213,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/ThirdPersonFollower
-      Distance: 0.6439948678016663
+      Distance: 0.7478582859039307
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -221,17 +221,17 @@ Visualization Manager:
         Value: false
       Field of View: 0.7853981852531433
       Focal Point:
-        X: -0.1889297068119049
-        Y: 0.16322803497314453
-        Z: -1.862645149230957e-08
+        X: 0.3670429587364197
+        Y: -0.1682618260383606
+        Z: -5.8635656330352504e-08
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: -0.004999917931854725
+      Pitch: -0.13499999046325684
       Target Frame: <Fixed Frame>
-      Yaw: 3.370020627975464
+      Yaw: 2.580003499984741
     Saved: ~
 Window Geometry:
   Displays:

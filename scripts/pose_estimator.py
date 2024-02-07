@@ -166,7 +166,7 @@ class pose_estimator:
         self.pub_pa.publish(poses[0])
         goal_pose = PoseStamped()
         goal_pose.header.frame_id = self.base_link_cam
-        goal_pose.pose = poses[0].poses[2]
+        goal_pose.pose = poses[0].poses[-1]
         self.pub_ps.publish(goal_pose)
 
         return [poses]
