@@ -5,7 +5,7 @@ The following code has the only aim to compute the centroid of
 a fiducial marker detected.
 """
 
-from cables_detection.srv import Cables2D_Poses
+from cameras.srv import Aruco2D_Poses
 from cv_bridge import CvBridge
 import cv2
 from fiducial_msgs.msg import FiducialArray
@@ -25,7 +25,7 @@ class Centroid_ArucoServer:
         # Initialize ROS node
         rospy.init_node('centroid_arucoserver')
         rospy.Subscriber('/fiducial_vertices', FiducialArray, self.fiducial_vertices_callback)
-        rospy.Service('centroid_aruco', Cables2D_Poses, self.handle_centroid_aruco)
+        rospy.Service('centroid_aruco', Aruco2D_Poses, self.handle_centroid_aruco)
         rospy.loginfo("Ready to compute centroids of the fiducial vertices.")
 
         # Run ROS spinner
@@ -48,7 +48,7 @@ class Centroid_ArucoServer:
             new_point = Pose()
             new_point.position.x = xc
             new_point.position.y = yc
-            centroids.poses.append(new_point)
+            centroids.centroid.append(new_point)
             fiducial_id = fiducial.fiducial_id
             rospy.loginfo("Fiducial ID: %d\nCentroid: %s", fiducial_id, centroids.poses[-1].position)
 

@@ -18,12 +18,14 @@ find_package(catkin REQUIRED COMPONENTS
 
 add_service_files(
   FILES
-  Cable3D_Poses.srv
+  Obj3D_Poses.srv
+  Aruco2D_Poses.srv
 )
 
 generate_messages(
   DEPENDENCIES
   geometry_msgs
+  sensor_msgs
 )
 
 catkin_package(

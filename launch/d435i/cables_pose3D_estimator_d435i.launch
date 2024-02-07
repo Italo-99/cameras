@@ -1,7 +1,12 @@
 <launch>
 
+    <!-- Custom user args -->
+    <arg name="rviz_path"  	default="$(find cameras)/rviz/d435i_cables"/>
+
     <!-- 3D pose estimation with d435i camera launch -->
-	<include file="$(find cameras)/launch/d435i/pose3D_estimator_d435i.launch" />
+	<include file="$(find cameras)/launch/d435i/pose3D_estimator_d435i.launch" >
+        <arg name="rviz_path"  	value="$(arg rviz_path)"/>
+    </include>
 
     <!-- FASTDLO Detection server  -->
     <node pkg="cables_detection" type="fastdlo_server.py" name="fastdlo_server"/>

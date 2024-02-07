@@ -11,7 +11,7 @@ This node executes three main activities:
 The evaluation with camera depth info is compared with fiducial transforms.
 """
 
-from    cables_detection.srv    import Cables2D_Poses
+from    cameras.srv    import Aruco2D_Poses
 from    cameras.srv             import Cable3D_Poses
 from    cv_bridge               import CvBridge
 import  cv2
@@ -56,7 +56,7 @@ class aruco_estimator:
 
         # Connect as Cable2D poses client to get aruco centroids values
         rospy.wait_for_service('/centroid_aruco')
-        self.service_proxy = rospy.ServiceProxy('/centroid_aruco', Cables2D_Poses)
+        self.service_proxy = rospy.ServiceProxy('/centroid_aruco', Aruco2D_Poses)
         rospy.loginfo('Connected to centroid_aruco server')
 
         # Create a server that receives
@@ -113,7 +113,7 @@ class aruco_estimator:
         dist2D_pixels = CvBridge().imgmsg_to_cv2(depth_img, depth_img.encoding)
 
         # Compute the position of the detected points referred to camera optical frame
-        poses = self.poses_depth_model(response.centroids,dist2D_pixels)
+        poses = self.poses_depth_model(response.centroid,dist2D_pixels)
 
         # Get camera pose
         cam_x = req.camera_pose.pose.position.x
