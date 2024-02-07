@@ -5,7 +5,6 @@ Panels:
     Property Tree Widget:
       Expanded:
         - /TF1/Frames1
-        - /PoseArray1
       Splitter Ratio: 0.6360294222831726
     Tree Height: 215
   - Class: rviz/Selection
@@ -61,7 +60,7 @@ Visualization Manager:
         Expand Link Details: false
         Expand Tree: false
         Link Tree Style: Links in Alphabetic Order
-        base_link:
+        camera_base_link:
           Alpha: 1
           Show Axes: false
           Show Trail: false
@@ -91,6 +90,8 @@ Visualization Manager:
           Value: true
         camera_aligned_depth_to_color_frame:
           Value: false
+        camera_base_link:
+          Value: true
         camera_bottom_screw_frame:
           Value: false
         camera_color_frame:
@@ -114,16 +115,17 @@ Visualization Manager:
       Tree:
         map:
           base_link:
-            camera_bottom_screw_frame:
-              camera_link:
-                camera_aligned_depth_to_color_frame:
-                  camera_color_optical_frame:
+            camera_base_link:
+              camera_bottom_screw_frame:
+                camera_link:
+                  camera_aligned_depth_to_color_frame:
+                    camera_color_optical_frame:
+                      {}
+                  camera_color_frame:
                     {}
-                camera_color_frame:
-                  {}
-                camera_depth_frame:
-                  camera_depth_optical_frame:
-                    {}
+                  camera_depth_frame:
+                    camera_depth_optical_frame:
+                      {}
       Update Interval: 0
       Value: true
     - Class: rviz/Image
@@ -164,14 +166,30 @@ Visualization Manager:
       Shaft Length: 0.23000000417232513
       Shaft Radius: 0.009999999776482582
       Shape: Arrow (Flat)
-      Topic: /pose_array_topic
+      Topic: /detection3D_poses
+      Unreliable: false
+      Value: true
+    - Alpha: 1
+      Axes Length: 1
+      Axes Radius: 0.10000000149011612
+      Class: rviz/Pose
+      Color: 32; 74; 135
+      Enabled: true
+      Head Length: 0.30000001192092896
+      Head Radius: 0.10000000149011612
+      Name: Pose
+      Queue Size: 10
+      Shaft Length: 1
+      Shaft Radius: 0.05000000074505806
+      Shape: Arrow
+      Topic: ""
       Unreliable: false
       Value: true
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48
     Default Light: true
-    Fixed Frame: base_link
+    Fixed Frame: camera_base_link
     Frame Rate: 30
   Name: root
   Tools:
@@ -195,7 +213,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/ThirdPersonFollower
-      Distance: 0.5818936228752136
+      Distance: 0.6439948678016663
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -203,17 +221,17 @@ Visualization Manager:
         Value: false
       Field of View: 0.7853981852531433
       Focal Point:
-        X: 0.3431496024131775
-        Y: 0.24585093557834625
-        Z: -2.60770320892334e-08
+        X: -0.1889297068119049
+        Y: 0.16322803497314453
+        Z: -1.862645149230957e-08
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.25999996066093445
+      Pitch: -0.004999917931854725
       Target Frame: <Fixed Frame>
-      Yaw: 0.8049984574317932
+      Yaw: 3.370020627975464
     Saved: ~
 Window Geometry:
   Displays:

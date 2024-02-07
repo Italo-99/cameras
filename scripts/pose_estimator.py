@@ -15,45 +15,59 @@ from    cables_detection.srv    import Cables2D_Poses
 from    cameras.srv             import Obj3D_Poses
 from    cv_bridge               import CvBridge
 import  cv2
-from    fiducial_msgs.msg       import FiducialArray, FiducialTransformArray
-from    geometry_msgs.msg       import PoseArray,Pose
+from    geometry_msgs.msg       import PoseArray,PoseStamped,Pose,TransformStamped
 import  math
 import  numpy as np
 import  rospy,rospkg
-from    std_msgs.msg            import Float32
 from    sensor_msgs.msg         import Image
+import  tf2_ros
 
 class pose_estimator:
 
     def __init__(self):
 
-        # Initialize global class variables and params
-        self.depth_img_   = Image()         # depth image
-        self.color_img_   = Image()         # color image
-        self.depth_topic_ = '/camera/aligned_depth_to_color/image_raw'  # PARAM
-        self.color_topic_ = '/camera/color/image_raw'                   # PARAM
-        loop_rate         = 10                                          # Set loop rate PARAM
-        self.fx           = 609.9419555664062                           # PARAM
-        self.fy           = 608.6234130859375                           # PARAM
-        self.cx           = 324.0304870605469                           # PARAM
-        self.cy           = 246.2322540283203                           # PARAM
-        self.cam_to_opt_x = 0.  # x offset from base_link to camera_color_optical_frame PARAM
-        self.cam_to_opt_y = 0.  # y offset from base_link to camera_color_optical_frame PARAM
-        self.cam_to_opt_z = 0.  # z offset from base_link to camera_color_optical_frame PARAM
-        detector          = "cables"  # PARAM: what is the detector to activate
-        self.frame_id     = "camera_color_optical_frame"    # PARAM: frame_id of the detection
-        
         # Initialize the ROS node
         rospy.init_node('pose_estimator_node')
-        spin_rate         = rospy.Rate(loop_rate)
 
+        # Initialize global class variables and params
+        self.depth_img_     = Image()                               # depth image
+        self.color_img_     = Image()                               # color image
+        self.depth_topic_   = rospy.get_param('~depth_topic')
+        self.color_topic_   = rospy.get_param('~color_topic')
+        loop_rate           = rospy.get_param('~loop_rate')
+        self.fx             = rospy.get_param('~fx')
+        self.fy             = rospy.get_param('~fy')
+        self.cx             = rospy.get_param('~cx')
+        self.cy             = rospy.get_param('~cy')
+        self.optical_frame  = rospy.get_param('~optical_frame')
+        self.base_link_cam  = rospy.get_param('~base_link_cam')
+        detector            = rospy.get_param('~detector')
+        
+        # Get transform from base_link_cam to optical_frame
+        tf_rec = False
+        tf_buffer = tf2_ros.Buffer()
+        listener  = tf2_ros.TransformListener(tf_buffer)
+        transform = TransformStamped()
+        while not tf_rec:
+            try:
+                transform = tf_buffer.lookup_transform(self.base_link_cam, self.optical_frame, rospy.Time())
+            except:
+                rospy.loginfo("Waiting optical camera transfrom")
+            if transform.header.frame_id:
+                tf_rec = True
+                
+        self.cam_to_opt_x = transform.transform.translation.x
+        self.cam_to_opt_y = transform.transform.translation.y
+        self.cam_to_opt_z = transform.transform.translation.z
+        
         # Pose array publisher for RVIZ visualization purposes
-        self.pub = rospy.Publisher('/pose_array_topic', PoseArray, queue_size=1)
+        self.pub_pa = rospy.Publisher('/detection3D_poses', PoseArray,  queue_size=1)
+        self.pub_ps = rospy.Publisher('/grabbing_pose',     PoseStamped,queue_size=1)
 
-        # Create a subscriber for the image aligned depth topic PARAM
+        # Create a subscriber for the image aligned depth topic
         self.sub_al_depth_ = rospy.Subscriber(self.depth_topic_, Image, self.image_Aldepth_callback)
 
-        # Create a subscriber for the image aligned depth topic PARAM
+        # Create a subscriber for the image aligned depth topic
         self.sub_color_ = rospy.Subscriber(self.color_topic_, Image, self.image_color_callback)
 
         # Switch choice for image object detector
@@ -61,7 +75,7 @@ class pose_estimator:
             # Connect as Cable2D poses client to get aruco centroids values
             rospy.wait_for_service('/fastdlo')
             self.service_proxy = rospy.ServiceProxy('/fastdlo', Cables2D_Poses)
-            rospy.loginfo('Connected to fastdlo server')
+            # rospy.loginfo('Connected to fastdlo server')
 
         else:
             rospy.logerror("No image detector specified")
@@ -69,9 +83,10 @@ class pose_estimator:
 
         # Create a server that receives
         rospy.Service('pose3D_estimator', Obj3D_Poses, self.handle_3d_poses)
-        rospy.loginfo('Ready to compute 3D poses')
+        # rospy.loginfo('Ready to compute 3D poses')
 
         # ROS python spinner
+        spin_rate = rospy.Rate(loop_rate)
         while not rospy.is_shutdown():
             spin_rate.sleep()
 
@@ -93,13 +108,13 @@ class pose_estimator:
             tz = 1
             # Normalize the vector to get the direction versor
             norm = math.sqrt(tx*tx+ty*ty+tz*tz)
-            # Compute the poses -> REFERRED TO CAMERA_LINK ORIENTATION
-            # x = +d*tz/norm
-            # y = -d*tx/norm
-            # z = -d*ty/norm
-            x = d*tx/norm
-            y = d*ty/norm
-            z = d*tz/norm
+            # Compute the poses -> REFERRED TO CAMERA_BASE_LINK ORIENTATION
+            x = +d*tz/norm
+            y = -d*ty/norm
+            z = -d*tx/norm
+            # x = d*tx/norm
+            # y = d*ty/norm
+            # z = d*tz/norm
             new_pose = np.array([x,y,z]).reshape(1,3)
             poses = np.append(poses,new_pose,axis=0)
             # rospy.loginfo("Centroid 3D pose: x = %s, y = %s, z = %s", x,y,z)
@@ -135,7 +150,7 @@ class pose_estimator:
 
             # Return poses response
             cable_3D = PoseArray()
-            cable_3D.header.frame_id = self.frame_id
+            cable_3D.header.frame_id = self.base_link_cam
             # Fill cable poses 
             for k in range(len(poses_cable)):
                 response_pose = Pose()
@@ -148,7 +163,11 @@ class pose_estimator:
             poses.append(cable_3D)
 
         # Visualize the first cable on RViz
-        self.pub.publish(poses[0])
+        self.pub_pa.publish(poses[0])
+        goal_pose = PoseStamped()
+        goal_pose.header.frame_id = self.base_link_cam
+        goal_pose.pose = poses[0].poses[2]
+        self.pub_ps.publish(goal_pose)
 
         return [poses]
 

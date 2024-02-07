@@ -1,19 +1,46 @@
 <launch>
 
-	<!-- Custom user args -->
-    <arg name="rviz_path"  	default="$(find cameras)/rviz/d435i"/>
+	<!-- RViz user args -->
+    <arg name="rviz"             default="true"/>
+    <arg name="rviz_path"  		 default="$(find cameras)/rviz/d435i"/>
+	<arg name="pub_base_link_tf" default="true"/>
+	<arg name="pub_map_tf" 		 default="true"/>
+
+	<!-- Pose estimator args -->
+    <arg name="depth_topic"  	default="/camera/aligned_depth_to_color/image_raw"/>
+    <arg name="color_topic"  	default="/camera/color/image_raw"/>
+    <arg name="loop_rate"  		default="10"/>
+    <arg name="fx"  			default="609.9419555664062"/>
+    <arg name="fy"  			default="608.6234130859375"/>
+    <arg name="cx"  			default="324.0304870605469  "/>
+    <arg name="cy"  			default="246.2322540283203"/>
+    <arg name="optical_frame"  	default="camera_color_optical_frame"/>
+    <arg name="base_link_cam"  	default="camera_base_link"/>
+    <arg name="detector"  		default="cables"/>	
 
     <!-- d435i camera launch -->
 	<include file="$(find cameras)/launch/d435i/d435i.launch">
-		<arg name="rviz" 		value="true"/>
-		<arg name="rviz_path"  	value="$(arg rviz_path)"/>
+		<arg name="rviz" 				value="true"/>
+		<arg name="rviz_path"  			value="$(arg rviz_path)"/>
+    	<arg name="pub_base_link_tf"    value="$(arg pub_base_link_tf)"/>
   	</include>
 
 	<!-- Publish a dummy tf beteen map and usb_cam to activate pose detectioin -->
-	<node pkg="tf2_ros" type="static_transform_publisher" name="d435i_cam_tf_publisher"
+	<node if="$(arg pub_map_tf)" pkg="tf2_ros" type="static_transform_publisher" name="d435i_cam_tf_publisher"
 		args="0 0 0 0 0 0 1 map base_link" />
 
     <!-- 3D pose detection server -->
-    <node pkg="cameras" type="pose_estimator.py" name="pose_estimator_node"/>
+    <node pkg="cameras" type="pose_estimator.py" name="pose_estimator_node">
+    	<param name="depth_topic" 	type="string" 	value="$(arg depth_topic)"/>
+    	<param name="color_topic" 	type="string" 	value="$(arg color_topic)"/>
+    	<param name="loop_rate"	  	type="int"    	value="$(arg loop_rate)"/>
+    	<param name="fx"	  	  	type="double"  	value="$(arg fx)"/>
+    	<param name="fy"	  	  	type="double"  	value="$(arg fy)"/>
+    	<param name="cx"	  	  	type="double"  	value="$(arg cx)"/>
+    	<param name="cy"	  	  	type="double"  	value="$(arg cy)"/>
+		<param name="optical_frame" type="string" 	value="camera_color_optical_frame"/>
+		<param name="base_link_cam" type="string" 	value="camera_base_link"/>
+		<param name="detector"  	type="string" 	value="cables"/>	
+	</node>
 
 </launch>
