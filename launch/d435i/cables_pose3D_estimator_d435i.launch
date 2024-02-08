@@ -3,6 +3,7 @@
     <!-- RViz user args -->
     <arg name="rviz"             default="true"/>
     <arg name="rviz_path"  	     default="$(find cameras)/rviz/d435i_cables"/>
+    <arg name="pub_map_tf" 		 default="true"/>
 	<arg name="pub_base_link_tf" default="true"/>
     <!-- Image format args -->
     <arg name="image_width"     default="640"/>
@@ -16,9 +17,10 @@
 
     <!-- 3D pose estimation with d435i camera launch -->
 	<include file="$(find cameras)/launch/d435i/pose3D_estimator_d435i.launch" >
-		<arg name="rviz" 				value="true"/>
+		<arg name="rviz" 				value="$(arg rviz)"/>
         <arg name="rviz_path"  	        value="$(arg rviz_path)"/>
     	<arg name="pub_base_link_tf"    value="$(arg pub_base_link_tf)"/>
+	    <arg name="pub_map_tf" 		    value="$(arg pub_map_tf)"/>
         <arg name="pose_output"  	    value="$(arg log_output)"/>
         <arg name="cal_factor"  	    value="$(arg cal_factor)"/>
         <arg name="bias_factor"  	    value="$(arg bias_factor)"/>

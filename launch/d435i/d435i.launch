@@ -133,7 +133,7 @@
 
     <!-- Load the camera model -->
     <param name="robot_description" command="$(find xacro)/xacro --inorder '$(find cameras)/urdf/d435.urdf.xacro'"/>
-    <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher"/>
+    <node name="cam_robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher"/>
 
     <!-- Add base link tf publisher at need -->
     <node if = "$(arg pub_base_link_tf)" name="d435i_base_link_cam_tf_publisher" pkg="tf2_ros" type="static_transform_publisher"

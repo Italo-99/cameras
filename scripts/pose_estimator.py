@@ -48,7 +48,6 @@ This node executes three main activities:
     splines of the detected cables, together with received pixel coordinates (u,v)
 """
 
-from urllib.parse import non_hierarchical
 from    cables_detection.srv    import Cables2D_Poses
 from    cameras.srv             import Obj3D_Poses
 from    cv_bridge               import CvBridge
@@ -71,6 +70,7 @@ class pose_estimator:
         # Initialize global class variables and params
         self.depth_img_     = Image()
         self.color_img_     = Image()
+        # self.depth_message_queue = []
         self.depth_topic_   = rospy.get_param('~depth_topic')
         self.color_topic_   = rospy.get_param('~color_topic')
         loop_rate           = rospy.get_param('~loop_rate')
@@ -107,7 +107,7 @@ class pose_estimator:
         
         # Pose array publisher for RVIZ visualization purposes
         self.pub_pa = rospy.Publisher('/detection3D_poses', PoseArray,  queue_size=1)
-        self.pub_ps = rospy.Publisher('/grabbing_pose',     PoseStamped,queue_size=1)
+        # self.pub_ps = rospy.Publisher('/grabbing_pose',     PoseStamped,queue_size=1)
 
         # Create a subscriber for the image aligned depth topic
         self.sub_al_depth_ = rospy.Subscriber(self.depth_topic_, Image, self.image_Aldepth_callback)
@@ -160,9 +160,9 @@ class pose_estimator:
             # x = d*tx/norm
             # y = d*ty/norm
             # z = d*tz/norm
-            # Add the new pose, check if is not [0.,0.,0.]
+            # Add the new pose, check if is not [0.,0.,0.] -> x distance is sufficient for this check
             new_pose = np.array([x,y,z]).reshape(1,3)
-            if (new_pose[0][0] < 0.01) and (len(poses) == 0):
+            if new_pose[0][0] < 0.01 and (len(poses)!=0):
                 new_pose[0] = poses[-1]
                 poses = poses[:-1]
             poses = np.append(poses,new_pose,axis=0)
@@ -199,11 +199,20 @@ class pose_estimator:
         
         # Measure computational time
         start_time_depth_reading = rospy.get_time()
+        
+        # # Is it possible to uncomment the following code to filter last 5 depth images
+        # depth_img = Image()
+
+        # for i in range(len(self.depth_img_.data)):
+        #     for j in range(len(self.depth_img_.data)[0]):
+        #         for k in range(len(self.message_queue)):
+        #             depth_img[i][j] += self.message_queue[k].data[i][j]/len(self.message_queue)        
 
         # Compute the distances of each pixel
         # This data should be interpreted in this way:
             # 16UC1: 16 bits (2 bytes) compose a 16-bit unsigned int value 
             #        for a single pixel to express distance in mm
+
         depth_img = self.depth_img_
         dist2D_pixels = CvBridge().imgmsg_to_cv2(depth_img, depth_img.encoding)
 
@@ -247,10 +256,10 @@ class pose_estimator:
 
         # Visualize the first cable on RViz
         self.pub_pa.publish(poses[0])
-        goal_pose = PoseStamped()
-        goal_pose.header.frame_id = self.base_link_cam
-        goal_pose.pose = poses[0].poses[-1]
-        self.pub_ps.publish(goal_pose)
+        # goal_pose = PoseStamped()
+        # goal_pose.header.frame_id = self.base_link_cam
+        # goal_pose.pose = poses[0].poses[-1]
+        # self.pub_ps.publish(goal_pose)
 
         # Print 3D poses computation time
         poses3D_time = rospy.get_time()-poses3D_time_start
@@ -264,6 +273,11 @@ class pose_estimator:
     def image_Aldepth_callback(self,msg):
 
         self.depth_img_ = msg
+
+        # # Add the incoming message to the queue
+        # self.message_queue.append(msg)
+        # # Keep only the latest 5 messages in the queue
+        # self.message_queue = self.message_queue[-5:]
 
     # Callback to color images
     def image_color_callback(self,msg):
