@@ -11,6 +11,7 @@ This node executes three main activities:
 The evaluation with camera depth info is compared with fiducial transforms.
 """
 
+from urllib.parse import non_hierarchical
 from    cables_detection.srv    import Cables2D_Poses
 from    cameras.srv             import Obj3D_Poses
 from    cv_bridge               import CvBridge
@@ -19,6 +20,7 @@ from    geometry_msgs.msg       import PoseArray,PoseStamped,Pose,TransformStamp
 import  math
 import  numpy as np
 import  rospy,rospkg
+from    scipy.interpolate       import interp1d
 from    sensor_msgs.msg         import Image
 import  tf2_ros
 
@@ -48,14 +50,18 @@ class pose_estimator:
         tf_buffer = tf2_ros.Buffer()
         listener  = tf2_ros.TransformListener(tf_buffer)
         transform = TransformStamped()
+        time_now  = rospy.Time.now()
         while not tf_rec:
             try:
                 transform = tf_buffer.lookup_transform(self.base_link_cam, self.optical_frame, rospy.Time())
             except:
                 rospy.loginfo("Waiting optical camera transfrom")
             if transform.header.frame_id:
+                rospy.loginfo("Optical camera transform found")
                 tf_rec = True
+            rospy.sleep(1)
                 
+        # Store pose transform from base camera link to optical frame
         self.cam_to_opt_x = transform.transform.translation.x
         self.cam_to_opt_y = transform.transform.translation.y
         self.cam_to_opt_z = transform.transform.translation.z
@@ -75,7 +81,7 @@ class pose_estimator:
             # Connect as Cable2D poses client to get aruco centroids values
             rospy.wait_for_service('/fastdlo')
             self.service_proxy = rospy.ServiceProxy('/fastdlo', Cables2D_Poses)
-            # rospy.loginfo('Connected to fastdlo server')
+            rospy.loginfo('Connected to fastdlo server')
 
         else:
             rospy.logerror("No image detector specified")
@@ -83,7 +89,7 @@ class pose_estimator:
 
         # Create a server that receives
         rospy.Service('pose3D_estimator', Obj3D_Poses, self.handle_3d_poses)
-        # rospy.loginfo('Ready to compute 3D poses')
+        rospy.loginfo('Ready to compute 3D poses')
 
         # ROS python spinner
         spin_rate = rospy.Rate(loop_rate)
@@ -119,10 +125,29 @@ class pose_estimator:
             poses = np.append(poses,new_pose,axis=0)
             # rospy.loginfo("Centroid 3D pose: x = %s, y = %s, z = %s", x,y,z)
 
+            """
+            # Create an interpolation function for each dimension
+            interp_func_x = interp1d(x, y, kind='cubic')
+            interp_func_y = interp1d(x, y, kind='cubic')
+            interp_func_z = interp1d(x, z, kind='cubic')
+
+            # Define new x values for smoother curve
+            x_smooth = np.linspace(min(x), max(x), 100)
+
+            # Interpolate y and z values using the new x values
+            y_smooth = interp_func_x(x_smooth)
+            z_smooth = interp_func_y(x_smooth)
+
+            # Now, y_smooth and z_smooth contain the smoothed values
+            """
+
         return poses
     
     # Server function to compute 3D poses of centroids
     def handle_3d_poses(self,req):
+
+        # Measure computational time
+        start_time_depth_reading = rospy.get_time()
 
         # Compute the distances of each pixel
         # This data should be interpreted in this way:
@@ -131,9 +156,17 @@ class pose_estimator:
         depth_img = self.depth_img_
         dist2D_pixels = CvBridge().imgmsg_to_cv2(depth_img, depth_img.encoding)
 
+        # Print depth reading time
+        depth_reading_time = rospy.get_time()-start_time_depth_reading
+        rospy.loginfo("Depth reading time: %s",depth_reading_time)
+
         # Create a client to Image Poses Detector service to get (u,v) coords
         color_img = self.color_img_
         response = self.service_proxy(color_img)
+
+        # Print call to service time
+        service_time = rospy.get_time()-depth_reading_time
+        rospy.loginfo("Call to service time: %s",service_time)
 
         # Iterate over detected cables
         poses = []
@@ -168,6 +201,10 @@ class pose_estimator:
         goal_pose.header.frame_id = self.base_link_cam
         goal_pose.pose = poses[0].poses[-1]
         self.pub_ps.publish(goal_pose)
+
+        # Print 3D poses computation time
+        poses3D_time = rospy.get_time()-service_time
+        rospy.loginfo("Pose 3D computation time: %s",poses3D_time)
 
         return [poses]
 

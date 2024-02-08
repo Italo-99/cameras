@@ -17,6 +17,7 @@
     <arg name="optical_frame"  	default="camera_color_optical_frame"/>
     <arg name="base_link_cam"  	default="camera_base_link"/>
     <arg name="detector"  		default="cables"/>	
+    <arg name="pose_output"  	default="screen"/>
 
     <!-- d435i camera launch -->
 	<include file="$(find cameras)/launch/d435i/d435i.launch">
@@ -30,7 +31,7 @@
 		args="0 0 0 0 0 0 1 map base_link" />
 
     <!-- 3D pose detection server -->
-    <node pkg="cameras" type="pose_estimator.py" name="pose_estimator_node">
+    <node pkg="cameras" type="pose_estimator.py" name="pose_estimator_node" output="$(arg pose_output)">
     	<param name="depth_topic" 	type="string" 	value="$(arg depth_topic)"/>
     	<param name="color_topic" 	type="string" 	value="$(arg color_topic)"/>
     	<param name="loop_rate"	  	type="int"    	value="$(arg loop_rate)"/>
