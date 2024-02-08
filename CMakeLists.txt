@@ -19,6 +19,7 @@ find_package(catkin REQUIRED COMPONENTS
 add_service_files(
   FILES
   Obj3D_Poses.srv
+  Aruco3D_Pose.srv
   Aruco2D_Poses.srv
 )
 

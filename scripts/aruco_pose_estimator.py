@@ -1,5 +1,45 @@
 #!/usr/bin/env python
 
+"""
+*
+ * Software License Agreement (Apache Licence 2.0)
+ *
+ *  Copyright (c) [2024], [Andrea Pupa] [italo Almirante]
+ *  All rights reserved.
+ *
+ *  Redistribution and use in source and binary forms, with or without
+ *  modification, are permitted provided that the following conditions
+ *  are met:
+ *
+ *   1. Redistributions of source code must retain the above copyright
+ *      notice, this list of conditions and the following disclaimer.
+ *   2. Redistributions in binary form must reproduce the above copyright
+ *      notice, this list of conditions and the following disclaimer in
+ *      the documentation and/or other materials provided with the
+ *      distribution.
+ *   3. The name of the author may not be used to endorse or promote
+ *      products derived from this software without specific prior
+ *      written permission.
+ *
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ *  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ *  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+ *  FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+ *  COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ *  INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+ *  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+ *  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ *  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ *  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+ *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ *  POSSIBILITY OF SUCH DAMAGE.
+ *
+ *  Author: [Andrea Pupa] [Italo Almirante]
+ *  Created on: [2024-01-17]
+*
+"""
+
+
 """ CAMERA ESTEEMATOR NODE
 This node executes three main activities:
 1 - it's a subscriber to camera images, color and aligned depth
@@ -11,8 +51,8 @@ This node executes three main activities:
 The evaluation with camera depth info is compared with fiducial transforms.
 """
 
-from    cameras.srv    import Aruco2D_Poses
-from    cameras.srv             import Cable3D_Poses
+from    cameras.srv             import Aruco2D_Poses
+from    cameras.srv             import Aruco3D_Pose
 from    cv_bridge               import CvBridge
 import  cv2
 from    fiducial_msgs.msg       import FiducialArray, FiducialTransformArray
@@ -60,7 +100,7 @@ class aruco_estimator:
         rospy.loginfo('Connected to centroid_aruco server')
 
         # Create a server that receives
-        rospy.Service('aruco_estimator', Cable3D_Poses, self.handle_3d_poses)
+        rospy.Service('aruco_estimator', Aruco3D_Pose, self.handle_3d_poses)
         rospy.loginfo('Ready to compute aruco 3D poses')
 
     # Depth distance model computation
@@ -76,6 +116,7 @@ class aruco_estimator:
             v = centroid.position.y
             # Get the distance of that centroid
             d = float(dist2D_pixels[int(u),int(v)]/1000)
+            print(d)
             # Compute direction vector
             tx = (u-self.cx)/self.fx
             ty = (v-self.cy)/self.fy
@@ -83,12 +124,9 @@ class aruco_estimator:
             # Normalize the vector to get the direction versor
             norm = math.sqrt(tx*tx+ty*ty+tz*tz)
             # Compute the poses -> REFERRED TO CAMERA_LINK ORIENTATION
-            # x = +d*tz/norm
-            # y = -d*tx/norm
-            # z = -d*ty/norm
-            x = d*tx/norm
-            y = d*ty/norm
-            z = d*tz/norm
+            x = +d*tz/norm
+            y = -d*ty/norm
+            z = -d*tx/norm
             new_pose = np.array([x,y,z]).reshape(1,3)
             poses = np.append(poses,new_pose,axis=0)
             rospy.loginfo("Pose computed by the model: x = %s, y = %s, z = %s", x,y,z)
@@ -101,16 +139,16 @@ class aruco_estimator:
     # Server function to compute 3D poses of centroids
     def handle_3d_poses(self,req):
 
-        # Create a client to Cable2D_Poses service to get aruco centroids pixels
-        color_img = self.color_img_
-        response = self.service_proxy(color_img)
-
         # Compute the distances of each pixel
         # This data should be interpreted in this way:
             # 16UC1: 16 bits (2 bytes) compose a 16-bit unsigned int value 
             #        for a single pixel to express distance in mm
         depth_img = self.depth_img_
         dist2D_pixels = CvBridge().imgmsg_to_cv2(depth_img, depth_img.encoding)
+
+        # Create a client to Cable2D_Poses service to get aruco centroids pixels
+        color_img = self.color_img_
+        response = self.service_proxy(color_img)
 
         # Compute the position of the detected points referred to camera optical frame
         poses = self.poses_depth_model(response.centroid,dist2D_pixels)
@@ -121,15 +159,15 @@ class aruco_estimator:
         cam_z = req.camera_pose.pose.position.z
 
         # Return poses response
-        response = PoseArray()
+        response3D = PoseArray()
         for k in range(len(poses)):
             response_pose = Pose()
             response_pose.position.x = poses[k][0] + cam_x + self.cam_to_opt_x
             response_pose.position.y = poses[k][1] + cam_y + self.cam_to_opt_y
             response_pose.position.z = poses[k][2] + cam_z + self.cam_to_opt_z
-            response.poses.append(response_pose)
+            response3D.poses.append(response_pose)
 
-        return response
+        return response3D,response.centroid
 
     # Callback to transform callback of aruco detect pkg
     def fiducial_transforms_callback(self,msg):
