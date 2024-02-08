@@ -73,7 +73,7 @@ class aruco_estimator:
         self.gt_poses_    = np.empty((0,3)) # ground truth poses received by aruco pkg
         self.depth_topic_ = '/camera/aligned_depth_to_color/image_raw'  # PARAM
         self.color_topic_ = '/camera/color/image_raw'                   # PARAM
-        self.freq_rate_   = 10                                          # PARAM
+        self.freq_rate_   = 50                                          # PARAM
         self.fx           = 609.9419555664062                           # PARAM
         self.fy           = 608.6234130859375                           # PARAM
         self.cx           = 324.0304870605469                           # PARAM
@@ -125,13 +125,13 @@ class aruco_estimator:
             norm = math.sqrt(tx*tx+ty*ty+tz*tz)
             # Compute the poses -> REFERRED TO CAMERA_LINK ORIENTATION
             x = +d*tz/norm
-            y = -d*ty/norm
-            z = -d*tx/norm
+            y = -d*tx/norm
+            z = -d*ty/norm
             new_pose = np.array([x,y,z]).reshape(1,3)
             poses = np.append(poses,new_pose,axis=0)
             rospy.loginfo("Pose computed by the model: x = %s, y = %s, z = %s", x,y,z)
             rospy.loginfo("Pose computed by aruco pkg: x = %s, y = %s, z = %s", 
-                          self.gt_poses_[index][0],self.gt_poses_[index][1],self.gt_poses_[index][2])
+                          self.gt_poses_[index][2],-self.gt_poses_[index][0],-self.gt_poses_[index][1])
             index += 1
 
         return poses
