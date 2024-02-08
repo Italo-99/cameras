@@ -18,6 +18,8 @@
     <arg name="base_link_cam"  	default="camera_base_link"/>
     <arg name="detector"  		default="cables"/>	
     <arg name="pose_output"  	default="screen"/>
+    <arg name="cal_factor"      default="1"/>
+    <arg name="bias_factor"     default="0"/>
 
     <!-- d435i camera launch -->
 	<include file="$(find cameras)/launch/d435i/d435i.launch">
@@ -41,7 +43,9 @@
     	<param name="cy"	  	  	type="double"  	value="$(arg cy)"/>
 		<param name="optical_frame" type="string" 	value="camera_color_optical_frame"/>
 		<param name="base_link_cam" type="string" 	value="camera_base_link"/>
-		<param name="detector"  	type="string" 	value="cables"/>	
+		<param name="detector"  	type="string" 	value="cables"/>
+        <param name="cal_factor"  	type="double"   value="$(arg cal_factor)"/>
+        <param name="bias_factor"  	type="double"   value="$(arg bias_factor)"/>	
 	</node>
 
 </launch>

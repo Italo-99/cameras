@@ -11,6 +11,8 @@
     <!-- Print image detection results and log info-->
     <arg name="check_detection" default="false"/>
     <arg name="log_output"      default="screen"/>
+    <arg name="cal_factor"      default="1"/>
+    <arg name="bias_factor"     default="0"/>
 
     <!-- 3D pose estimation with d435i camera launch -->
 	<include file="$(find cameras)/launch/d435i/pose3D_estimator_d435i.launch" >
@@ -18,6 +20,8 @@
         <arg name="rviz_path"  	        value="$(arg rviz_path)"/>
     	<arg name="pub_base_link_tf"    value="$(arg pub_base_link_tf)"/>
         <arg name="pose_output"  	    value="$(arg log_output)"/>
+        <arg name="cal_factor"  	    value="$(arg cal_factor)"/>
+        <arg name="bias_factor"  	    value="$(arg bias_factor)"/>
     </include>
 
     <!-- FASTDLO Detection server  -->

@@ -3,12 +3,10 @@
 """ CAMERA ESTEEMATOR NODE
 This node executes three main activities:
 1 - it's a subscriber to camera images, color and aligned depth
-2 - it's a client to CentroidAruco service, which return pixel coordinates (u,v) 
-    of the center of the detected fiducial marker
+2 - it's a client to fastdlo detector service, which returns pixel coordinates (u,v) 
+    of the splines of the detected cables
 3 - it's a server which receives a camera pose and return (x,y,z) value of the 
-    center of the detected fiducial marker
-
-The evaluation with camera depth info is compared with fiducial transforms.
+    splines of the detected cables, together with received pixel coordinates (u,v)
 """
 
 from urllib.parse import non_hierarchical
@@ -32,8 +30,8 @@ class pose_estimator:
         rospy.init_node('pose_estimator_node')
 
         # Initialize global class variables and params
-        self.depth_img_     = Image()                               # depth image
-        self.color_img_     = Image()                               # color image
+        self.depth_img_     = Image()
+        self.color_img_     = Image()
         self.depth_topic_   = rospy.get_param('~depth_topic')
         self.color_topic_   = rospy.get_param('~color_topic')
         loop_rate           = rospy.get_param('~loop_rate')
@@ -44,6 +42,8 @@ class pose_estimator:
         self.optical_frame  = rospy.get_param('~optical_frame')
         self.base_link_cam  = rospy.get_param('~base_link_cam')
         detector            = rospy.get_param('~detector')
+        self.cal_factor     = rospy.get_param('~cal_factor')
+        self.bias_factor    = rospy.get_param('~bias_factor')
         
         # Get transform from base_link_cam to optical_frame
         tf_rec = False
@@ -51,7 +51,7 @@ class pose_estimator:
         listener  = tf2_ros.TransformListener(tf_buffer)
         transform = TransformStamped()
         time_now  = rospy.Time.now()
-        while not tf_rec:
+        while (not tf_rec) and (not rospy.is_shutdown()):
             try:
                 transform = tf_buffer.lookup_transform(self.base_link_cam, self.optical_frame, rospy.Time())
             except:
@@ -59,7 +59,7 @@ class pose_estimator:
             if transform.header.frame_id:
                 rospy.loginfo("Optical camera transform found")
                 tf_rec = True
-            rospy.sleep(1)
+            rospy.sleep(0.1)
                 
         # Store pose transform from base camera link to optical frame
         self.cam_to_opt_x = transform.transform.translation.x
@@ -107,7 +107,7 @@ class pose_estimator:
             u = centroid.position.x
             v = centroid.position.y
             # Get the distance of that centroid
-            d = float(dist2D_pixels[int(u),int(v)]/1000)
+            d = float(dist2D_pixels[int(u),int(v)]/1000)*self.cal_factor+self.bias_factor
             # Compute direction vector
             tx = (u-self.cx)/self.fx
             ty = (v-self.cy)/self.fy
@@ -121,31 +121,43 @@ class pose_estimator:
             # x = d*tx/norm
             # y = d*ty/norm
             # z = d*tz/norm
+            # Add the new pose, check if is not [0.,0.,0.]
             new_pose = np.array([x,y,z]).reshape(1,3)
+            if (new_pose[0][0] < 0.01) and (len(poses) == 0):
+                new_pose[0] = poses[-1]
+                poses = poses[:-1]
             poses = np.append(poses,new_pose,axis=0)
             # rospy.loginfo("Centroid 3D pose: x = %s, y = %s, z = %s", x,y,z)
 
-            """
-            # Create an interpolation function for each dimension
-            interp_func_x = interp1d(x, y, kind='cubic')
-            interp_func_y = interp1d(x, y, kind='cubic')
-            interp_func_z = interp1d(x, z, kind='cubic')
+            # # Create an interpolation function for each dimension
+            # interp_func_x = interp1d(poses[0], poses[1], kind='cubic')
+            # interp_func_y = interp1d(poses[0], poses[1], kind='cubic')
+            # interp_func_z = interp1d(poses[0], poses[2], kind='cubic')
 
-            # Define new x values for smoother curve
-            x_smooth = np.linspace(min(x), max(x), 100)
+            # # Define new x values for smoother curve
+            # x_smooth = np.linspace(min(poses[0]), max(poses[0]), int(len(poses)))
 
-            # Interpolate y and z values using the new x values
-            y_smooth = interp_func_x(x_smooth)
-            z_smooth = interp_func_y(x_smooth)
+            # # Interpolate y and z values using the new x values
+            # y_smooth = interp_func_y(x_smooth)
+            # z_smooth = interp_func_z(x_smooth)
 
-            # Now, y_smooth and z_smooth contain the smoothed values
-            """
+            # # Now, y_smooth and z_smooth contain the smoothed values
 
+        # Check if first elements are not 0
+        for k in range(len(poses)):
+            if poses[0][0] < 0.01:
+                poses = poses[1:]
+            else:
+                break
+
+        # Return results
         return poses
     
     # Server function to compute 3D poses of centroids
     def handle_3d_poses(self,req):
 
+        rospy.loginfo("Begin detection")
+        
         # Measure computational time
         start_time_depth_reading = rospy.get_time()
 
@@ -164,9 +176,8 @@ class pose_estimator:
         color_img = self.color_img_
         response = self.service_proxy(color_img)
 
-        # Print call to service time
-        service_time = rospy.get_time()-depth_reading_time
-        rospy.loginfo("Call to service time: %s",service_time)
+        # Measure init 3d pose computation time
+        poses3D_time_start = rospy.get_time()
 
         # Iterate over detected cables
         poses = []
@@ -203,10 +214,12 @@ class pose_estimator:
         self.pub_ps.publish(goal_pose)
 
         # Print 3D poses computation time
-        poses3D_time = rospy.get_time()-service_time
+        poses3D_time = rospy.get_time()-poses3D_time_start
         rospy.loginfo("Pose 3D computation time: %s",poses3D_time)
 
-        return [poses]
+        rospy.loginfo("End detection")
+
+        return poses,response.cables
 
     # Callback to depth images
     def image_Aldepth_callback(self,msg):
