@@ -255,7 +255,8 @@ class pose_estimator:
             poses.append(cable_3D)
 
         # Visualize the first cable on RViz
-        self.pub_pa.publish(poses[0])
+        if len(poses) > 0:
+            self.pub_pa.publish(poses[0])
         # goal_pose = PoseStamped()
         # goal_pose.header.frame_id = self.base_link_cam
         # goal_pose.pose = poses[0].poses[-1]

@@ -4,7 +4,7 @@
     <arg name="rviz"             default="true"/>
     <arg name="rviz_path"  	     default="$(find cameras)/rviz/d435i_cables"/>
     <arg name="pub_map_tf" 		 default="true"/>
-	<arg name="pub_base_link_tf" default="true"/>
+    <arg name="model"            default="true"/>
     <!-- Image format args -->
     <arg name="image_width"     default="640"/>
     <arg name="image_height"    default="480"/>
@@ -19,11 +19,11 @@
 	<include file="$(find cameras)/launch/d435i/pose3D_estimator_d435i.launch" >
 		<arg name="rviz" 				value="$(arg rviz)"/>
         <arg name="rviz_path"  	        value="$(arg rviz_path)"/>
-    	<arg name="pub_base_link_tf"    value="$(arg pub_base_link_tf)"/>
 	    <arg name="pub_map_tf" 		    value="$(arg pub_map_tf)"/>
         <arg name="pose_output"  	    value="$(arg log_output)"/>
         <arg name="cal_factor"  	    value="$(arg cal_factor)"/>
         <arg name="bias_factor"  	    value="$(arg bias_factor)"/>
+        <arg name="model"               value="$(arg model)"/>
     </include>
 
     <!-- FASTDLO Detection server  -->
@@ -31,7 +31,7 @@
         <param name="image_width"       type = "int"    value="$(arg image_width)"/>
         <param name="image_height"      type = "int"    value="$(arg image_height)"/>
         <param name="steps_cable"       type = "int"    value="$(arg steps_cable)"/>
-        <param name="check_detection"   type = "bool"   value="$(arg check_detection)"/>
+        <param name="check_detection"                   value="$(arg check_detection)"/>
     </node>
 
 </launch>

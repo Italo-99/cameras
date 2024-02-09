@@ -3,8 +3,8 @@
     <!-- Rviz simulation params -->
     <arg name="rviz"                default="true"/>
     <arg name="rviz_path"           default="$(find cameras)/rviz/d435i"/>
-    <!-- Pub base link tf frame as coincident with camera_base_link -->
-    <arg name="pub_base_link_tf"    default="true"/>
+    <!-- Pub base link tf frame and camera urdf model -->
+    <arg name="model"               default="true"/>
 
     <!-- Custom d435i args -->
         <arg name="reconnect_timeout" value="1"/>
@@ -132,12 +132,13 @@
     </group>
 
     <!-- Load the camera model -->
-    <param name="robot_description" command="$(find xacro)/xacro --inorder '$(find cameras)/urdf/d435.urdf.xacro'"/>
-    <node name="cam_robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher"/>
+    <param if="$(arg model)" name="robot_description" command="$(find xacro)/xacro --inorder '$(find cameras)/urdf/d435.urdf.xacro'"/>
+    <node if="$(arg model)" name="cam_robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher"/>
 
-    <!-- Add base link tf publisher at need -->
-    <node if = "$(arg pub_base_link_tf)" name="d435i_base_link_cam_tf_publisher" pkg="tf2_ros" type="static_transform_publisher"
-		args="0 0 0 0 0 0 1 base_link camera_base_link" />
+    <!-- <node pkg="tf2_ros" type="static_transform_publisher" name="d435i_camera_base_tf_publisher"
+		args="0.0106 0.0175 0.0125 0 0 0 1 camera_base_link camera_link" />
+	<node pkg="tf2_ros" type="static_transform_publisher" name="d435i_camera_bottom_tf_publisher"
+		args="0 0 0 0 0 0 1 camera_bottom_screw_frame camera_base_link" /> -->
 
     <!-- Launch RViz visualizer -->
     <node if="$(arg rviz)" name="rviz" pkg="rviz" type="rviz" args="-d $(arg rviz_path).rviz" required="true"/>
