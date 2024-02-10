@@ -243,7 +243,7 @@ class pose_estimator:
             # Return poses response
             cable_3D = PoseArray()
             cable_3D.header.frame_id = self.base_link_cam
-            # Fill cable poses 
+            # Fill cable poses
             for k in range(len(poses_cable)):
                 response_pose = Pose()
                 response_pose.position.x = poses_cable[k][0] + cam_x + self.cam_to_opt_x

@@ -8,6 +8,7 @@
     <!-- Image format args -->
     <arg name="image_width"     default="640"/>
     <arg name="image_height"    default="480"/>
+    <arg name="mask_th"         default="200"/>
     <arg name="steps_cable"     default="10"/>
     <!-- Print image detection results and log info-->
     <arg name="check_detection" default="false"/>
@@ -27,11 +28,13 @@
     </include>
 
     <!-- FASTDLO Detection server  -->
-    <node pkg="cables_detection" type="fastdlo_server.py" name="fastdlo_server" output="$(arg log_output)">
-        <param name="image_width"       type = "int"    value="$(arg image_width)"/>
-        <param name="image_height"      type = "int"    value="$(arg image_height)"/>
-        <param name="steps_cable"       type = "int"    value="$(arg steps_cable)"/>
-        <param name="check_detection"                   value="$(arg check_detection)"/>
-    </node>
+   	<include file="$(find cables_detection)/launch/fastdlo_detector_server.launch" >
+        <arg name="image_width"     value="$(arg image_width)"/>
+        <arg name="image_height"    value="$(arg image_height)"/>
+        <arg name="steps_cable"     value="$(arg steps_cable)"/>
+        <arg name="check_detection" value="$(arg check_detection)"/>
+        <arg name="mask_th"         value="$(arg mask_th)"/>
+        <arg name="log_output"      value="$(arg log_output)"/>
+    </include>
 
 </launch>
