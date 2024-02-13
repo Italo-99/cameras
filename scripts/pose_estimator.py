@@ -80,6 +80,7 @@ class pose_estimator:
         self.cy             = rospy.get_param('~cy')
         self.optical_frame  = rospy.get_param('~optical_frame')
         self.base_link_cam  = rospy.get_param('~base_link_cam')
+        self.base_link      = rospy.get_param('~base_link')
         detector            = rospy.get_param('~detector')
         self.cal_factor     = rospy.get_param('~cal_factor')
         self.bias_factor    = rospy.get_param('~bias_factor')
@@ -242,7 +243,7 @@ class pose_estimator:
 
             # Return poses response
             cable_3D = PoseArray()
-            cable_3D.header.frame_id = self.base_link_cam
+            cable_3D.header.frame_id = self.base_link
             # Fill cable poses
             for k in range(len(poses_cable)):
                 response_pose = Pose()
