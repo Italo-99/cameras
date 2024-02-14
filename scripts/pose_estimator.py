@@ -236,7 +236,7 @@ class pose_estimator:
             # Compute the position of the detected points referred to camera optical frame
             poses_cable = self.poses_depth_model(response.cables[k],dist2D_pixels)
 
-            # Get camera pose
+            # Get camera pose (referred to the same frame as self.base_link)
             cam_x = req.camera_pose.pose.position.x
             cam_y = req.camera_pose.pose.position.y
             cam_z = req.camera_pose.pose.position.z
@@ -258,6 +258,8 @@ class pose_estimator:
         # Visualize the first cable on RViz
         if len(poses) > 0:
             self.pub_pa.publish(poses[0])
+        
+        # Show a sample goal pose stamped value on rviz
         # goal_pose = PoseStamped()
         # goal_pose.header.frame_id = self.base_link_cam
         # goal_pose.pose = poses[0].poses[-1]
