@@ -1,0 +1,43 @@
+<launch>
+
+    <!-- RViz user args -->
+    <arg name="rviz"             default="true"/>
+    <arg name="rviz_path"  	     default="$(find cameras)/rviz/coppeliaCam"/>
+    <arg name="pub_map_tf" 		 default="true"/>
+    <!-- Image format args -->
+    <arg name="image_width"     default="640"/>
+    <arg name="image_height"    default="480"/>
+    <arg name="mask_th"         default="150"/>
+    <arg name="steps_cable"     default="10"/>
+    <!-- Print image detection results and log info-->
+    <arg name="check_detection" default="false"/>
+    <arg name="log_output"      default="screen"/>
+    <arg name="cal_factor"      default="1"/>
+    <arg name="bias_factor"     default="0"/>
+    <!-- Sim setup -->
+    <arg name="loop_rate"  		default="10"/>
+    <arg name="detector"  		default="cables"/>
+
+    <!-- 3D pose estimation with d435i camera launch -->
+	<include file="$(find cameras)/launch/d435i/pose3D_estimator_d435i.launch" >
+		<arg name="rviz" 			value="$(arg rviz)"/>
+        <arg name="rviz_path"  	    value="$(arg rviz_path)"/>
+	    <arg name="pub_map_tf" 		value="$(arg pub_map_tf)"/>
+        <arg name="pose_output"  	value="$(arg log_output)"/>
+        <arg name="cal_factor"  	value="$(arg cal_factor)"/>
+        <arg name="bias_factor"     value="$(arg bias_factor)"/>
+        <arg name="loop_rate"  		value="10"/>
+        <arg name="detector"  		value="cables"/>
+    </include>
+
+    <!-- FASTDLO Detection server  -->
+   	<include file="$(find cables_detection)/launch/fastdlo_detector_server.launch" >
+        <arg name="image_width"     value="$(arg image_width)"/>
+        <arg name="image_height"    value="$(arg image_height)"/>
+        <arg name="steps_cable"     value="$(arg steps_cable)"/>
+        <arg name="check_detection" value="$(arg check_detection)"/>
+        <arg name="mask_th"         value="$(arg mask_th)"/>
+        <arg name="log_output"      value="$(arg log_output)"/>
+    </include>
+
+</launch>
