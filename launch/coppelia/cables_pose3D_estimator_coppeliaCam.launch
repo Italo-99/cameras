@@ -1,9 +1,10 @@
 <launch>
 
-    <!-- RViz user args -->
+    <!-- RViz & Coppelia user args -->
     <arg name="rviz"             default="true"/>
     <arg name="rviz_path"  	     default="$(find cameras)/rviz/coppeliaCam"/>
     <arg name="pub_map_tf" 		 default="true"/>
+    <arg name="coppelia" 		 default="true"/>
     <!-- Image format args -->
     <arg name="image_width"     default="640"/>
     <arg name="image_height"    default="480"/>
@@ -17,9 +18,12 @@
     <!-- Sim setup -->
     <arg name="loop_rate"  		default="10"/>
     <arg name="detector"  		default="cables"/>
+    <arg name="base_link"  	    default="camera_base_link"/>
+    <arg name="cam_bound_low"   default="0.175"/>
+    <arg name="cam_bound_up" 	default="0.90"/>
 
     <!-- 3D pose estimation with d435i camera launch -->
-	<include file="$(find cameras)/launch/d435i/pose3D_estimator_d435i.launch" >
+	<include file="$(find cameras)/launch/coppelia/pose3D_estimator_coppeliaCam.launch" >
 		<arg name="rviz" 			value="$(arg rviz)"/>
         <arg name="rviz_path"  	    value="$(arg rviz_path)"/>
 	    <arg name="pub_map_tf" 		value="$(arg pub_map_tf)"/>
@@ -28,7 +32,10 @@
         <arg name="bias_factor"     value="$(arg bias_factor)"/>
         <arg name="loop_rate"  		value="10"/>
         <arg name="detector"  		value="cables"/>
-    </include>
+        <arg name="base_link"  	    value="$(arg base_link)"/>
+        <arg name="cam_bound_low"   value="$(arg cam_bound_low)"/>
+        <arg name="cam_bound_up" 	value="$(arg cam_bound_up)"/>
+	</include>
 
     <!-- FASTDLO Detection server  -->
    	<include file="$(find cables_detection)/launch/fastdlo_detector_server.launch" >

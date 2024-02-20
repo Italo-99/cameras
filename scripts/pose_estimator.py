@@ -84,6 +84,9 @@ class pose_estimator:
         detector            = rospy.get_param('~detector')
         self.cal_factor     = rospy.get_param('~cal_factor')
         self.bias_factor    = rospy.get_param('~bias_factor')
+        self.coppelia       = rospy.get_param('~coppelia')
+        self.cam_bound_low  = rospy.get_param('~cam_bound_low')
+        self.cam_bound_up   = rospy.get_param('~cam_bound_up')
         
         # Get transform from base_link_cam to optical_frame
         tf_rec = False
@@ -108,7 +111,7 @@ class pose_estimator:
         
         # Pose array publisher for RVIZ visualization purposes
         self.pub_pa = rospy.Publisher('/detection3D_poses', PoseArray,  queue_size=1)
-        # self.pub_ps = rospy.Publisher('/grabbing_pose',     PoseStamped,queue_size=1)
+        self.pub_ps = rospy.Publisher('/grabbing_pose',     PoseStamped,queue_size=1)
 
         # Create a subscriber for the image aligned depth topic
         self.sub_al_depth_ = rospy.Subscriber(self.depth_topic_, Image, self.image_Aldepth_callback)
@@ -135,6 +138,8 @@ class pose_estimator:
         spin_rate = rospy.Rate(loop_rate)
         while not rospy.is_shutdown():
             spin_rate.sleep()
+
+        rospy.signal_shutdown('Shutdown node')
 
     # Depth distance model computation
     def poses_depth_model(self,centroids,dist2D_pixels):
@@ -203,7 +208,6 @@ class pose_estimator:
         
         # # Is it possible to uncomment the following code to filter last 5 depth images
         # depth_img = Image()
-
         # for i in range(len(self.depth_img_.data)):
         #     for j in range(len(self.depth_img_.data)[0]):
         #         for k in range(len(self.message_queue)):
@@ -215,7 +219,14 @@ class pose_estimator:
             #        for a single pixel to express distance in mm
 
         depth_img = self.depth_img_
-        dist2D_pixels = CvBridge().imgmsg_to_cv2(depth_img, depth_img.encoding)
+
+        # If sim setup on Coppelia is on, convert depth image as range map
+        if self.coppelia:
+            dist2D_pixels = CvBridge().imgmsg_to_cv2(depth_img, depth_img.encoding)
+            dist2D_pixels = 1000*(dist2D_pixels[:,:,2]/255*(self.cam_bound_up-self.cam_bound_low)+self.cam_bound_low)
+        # If real setup is on, convert depth image as 16UC1 format    
+        else:
+            dist2D_pixels = CvBridge().imgmsg_to_cv2(depth_img, depth_img.encoding)
 
         # Print depth reading time
         depth_reading_time = rospy.get_time()-start_time_depth_reading
@@ -243,7 +254,7 @@ class pose_estimator:
 
             # Return poses response
             cable_3D = PoseArray()
-            cable_3D.header.frame_id = self.base_link
+            cable_3D.header.frame_id = self.base_link   # TODO: check correctness
             # Fill cable poses
             for k in range(len(poses_cable)):
                 response_pose = Pose()
@@ -260,10 +271,10 @@ class pose_estimator:
             self.pub_pa.publish(poses[0])
         
         # Show a sample goal pose stamped value on rviz
-        # goal_pose = PoseStamped()
-        # goal_pose.header.frame_id = self.base_link_cam
-        # goal_pose.pose = poses[0].poses[-1]
-        # self.pub_ps.publish(goal_pose)
+        goal_pose = PoseStamped()
+        goal_pose.header.frame_id = self.base_link_cam  # TODO: check correctness
+        goal_pose.pose = poses[0].poses[-1]
+        self.pub_ps.publish(goal_pose)
 
         # Print 3D poses computation time
         poses3D_time = rospy.get_time()-poses3D_time_start
