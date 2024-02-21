@@ -5,6 +5,7 @@
     <arg name="rviz_path"  	     default="$(find cameras)/rviz/d435i_cables"/>
     <arg name="pub_map_tf" 		 default="true"/>
     <arg name="model"            default="true"/>
+    <arg name="coppelia"         default="false"/>
     <!-- Image format args -->
     <arg name="image_width"     default="640"/>
     <arg name="image_height"    default="480"/>
@@ -25,6 +26,7 @@
         <arg name="cal_factor"  	    value="$(arg cal_factor)"/>
         <arg name="bias_factor"  	    value="$(arg bias_factor)"/>
         <arg name="model"               value="$(arg model)"/>
+	    <arg name="coppelia"          value="$(arg coppelia)"/>
     </include>
 
     <!-- FASTDLO Detection server  -->

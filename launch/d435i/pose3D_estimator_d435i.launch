@@ -5,6 +5,7 @@
     <arg name="rviz_path"  		 default="$(find cameras)/rviz/d435i"/>
 	<arg name="pub_map_tf" 		 default="true"/>
     <arg name="model"            default="true"/>
+    <arg name="coppelia"         default="false"/>
 
 	<!-- Pose estimator args -->
     <arg name="depth_topic"  	default="/camera/aligned_depth_to_color/image_raw"/>
@@ -21,6 +22,8 @@
     <arg name="pose_output"  	default="screen"/>
     <arg name="cal_factor"      default="1"/>
     <arg name="bias_factor"     default="0"/>
+    <arg name="cam_bound_low"   default="0.175"/>
+    <arg name="cam_bound_up" 	default="0.90"/>
 
     <!-- d435i camera launch -->
 	<include file="$(find cameras)/launch/d435i/d435i.launch">
@@ -42,12 +45,15 @@
     	<param name="fy"	  	  	type="double"  	value="$(arg fy)"/>
     	<param name="cx"	  	  	type="double"  	value="$(arg cx)"/>
     	<param name="cy"	  	  	type="double"  	value="$(arg cy)"/>
+    	<param name="coppelia"  	                value="$(arg coppelia)"/>
 		<param name="optical_frame" type="string" 	value="$(arg optical_frame)"/>
 		<param name="base_link_cam" type="string" 	value="$(arg base_link_cam)"/>
         <param name="base_link"  	type="string"   value="$(arg base_link)"/>
         <param name="detector"  	type="string" 	value="$(arg detector)"/>
         <param name="cal_factor"  	type="double"   value="$(arg cal_factor)"/>
-        <param name="bias_factor"  	type="double"   value="$(arg bias_factor)"/>	
+        <param name="bias_factor"  	type="double"   value="$(arg bias_factor)"/>
+        <param name="cam_bound_low" type="double"   value="$(arg cam_bound_low)"/>
+        <param name="cam_bound_up" 	type="double"   value="$(arg cam_bound_up)"/>	
 	</node>
 
 </launch>

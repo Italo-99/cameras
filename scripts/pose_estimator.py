@@ -52,12 +52,15 @@ from    cables_detection.srv    import Cables2D_Poses
 from    cameras.srv             import Obj3D_Poses
 from    cv_bridge               import CvBridge
 import  cv2
-from    geometry_msgs.msg       import PoseArray,PoseStamped,Pose,TransformStamped
+from    geometry_msgs.msg       import Point,PoseArray,PoseStamped,Pose,TransformStamped
 import  math
 import  numpy as np
+import  quaternion
 import  rospy,rospkg
-from    scipy.interpolate       import interp1d
+# from  scipy.interpolate       import interp1d
+from    scipy.spatial.transform import Rotation as R
 from    sensor_msgs.msg         import Image
+from    tf.transformations      import quaternion_from_euler
 import  tf2_ros
 
 class pose_estimator:
@@ -145,27 +148,31 @@ class pose_estimator:
     def poses_depth_model(self,centroids,dist2D_pixels):
 
         poses = np.empty((0,3))
+
         # Iterate over recevied centroids
         for centroid in centroids.poses:
+
             # rospy.loginfo("Centroids received: [%s , %s]", centroid.position.x, centroid.position.y)
             # Pixel coordinate of the centroid
             u = centroid.position.x
             v = centroid.position.y
+
             # Get the distance of that centroid
             d = float(dist2D_pixels[int(u),int(v)]/1000)*self.cal_factor+self.bias_factor
+            
             # Compute direction vector
             tx = (u-self.cx)/self.fx
             ty = (v-self.cy)/self.fy
             tz = 1
+
             # Normalize the vector to get the direction versor
             norm = math.sqrt(tx*tx+ty*ty+tz*tz)
+
             # Compute the poses -> REFERRED TO CAMERA_BASE_LINK ORIENTATION
-            x = +d*tz/norm
-            y = -d*ty/norm
-            z = -d*tx/norm
-            # x = d*tx/norm
-            # y = d*ty/norm
-            # z = d*tz/norm
+            x = +d*tz/norm  # x = d*tx/norm if optical frame is oriented as camera_base_link
+            y = -d*ty/norm  # y = d*ty/norm if optical frame is oriented as camera_base_link
+            z = -d*tx/norm  # z = d*tz/norm if optical frame is oriented as camera_base_link
+
             # Add the new pose, check if is not [0.,0.,0.] -> x distance is sufficient for this check
             new_pose = np.array([x,y,z]).reshape(1,3)
             if new_pose[0][0] < 0.01 and (len(poses)!=0):
@@ -173,7 +180,7 @@ class pose_estimator:
                 poses = poses[:-1]
             poses = np.append(poses,new_pose,axis=0)
             # rospy.loginfo("Centroid 3D pose: x = %s, y = %s, z = %s", x,y,z)
-
+            """
             # # Create an interpolation function for each dimension
             # interp_func_x = interp1d(poses[0], poses[1], kind='cubic')
             # interp_func_y = interp1d(poses[0], poses[1], kind='cubic')
@@ -187,7 +194,8 @@ class pose_estimator:
             # z_smooth = interp_func_z(x_smooth)
 
             # # Now, y_smooth and z_smooth contain the smoothed values
-
+            """
+        
         # Check if first elements are not 0
         for k in range(len(poses)):
             if poses[0][0] < 0.01:
@@ -198,6 +206,61 @@ class pose_estimator:
         # Return results
         return poses
     
+    # Transform a position from the camera_base_link frame to world frame reference
+    def ref_to_world(self,position,camera_pose):
+
+        # Create a Pose message for tool0
+        position_world = Point()
+
+        # Convert quaternion to numpy quaternion
+        # q = np.quaternion(  camera_pose.pose.orientation.w,
+        #                     camera_pose.pose.orientation.x,
+        #                     camera_pose.pose.orientation.y,
+        #                     camera_pose.pose.orientation.z)
+
+        # # Create a transform matrix
+        # transform           = np.eye(4)
+        # transform[0:3, 3]   = [camera_pose.pose.position.x, camera_pose.pose.position.y, camera_pose.pose.position.z]
+        # transform[0:3, 0:3] = np.array([[2 * (q.x * q.x + q.w * q.w) - 1,
+        #                                 2 * (q.x * q.y - q.z * q.w),
+        #                                 2 * (q.x * q.z + q.y * q.w)],
+        #                                 [2 * (q.x * q.y + q.z * q.w),
+        #                                 2 * (q.y * q.y + q.w * q.w) - 1,
+        #                                 2 * (q.y * q.z - q.x * q.w)],
+        #                                 [2 * (q.x * q.z - q.y * q.w),
+        #                                 2 * (q.y * q.z + q.x * q.w),
+        #                                 2 * (q.z * q.z + q.w * q.w) - 1]])
+
+        # Compute the quaternion of child frame orientation
+        q = np.array(([ camera_pose.pose.orientation.w,
+                        camera_pose.pose.orientation.x,
+                        camera_pose.pose.orientation.y,
+                        camera_pose.pose.orientation.z]))
+        # Compute the corresponding rotation matrix
+        rot_mat = R.from_quat(q).as_matrix()
+        # Compute the translation vector
+        camera_pos = np.array(([ camera_pose.pose.position.x,
+                                 camera_pose.pose.position.y,
+                                 camera_pose.pose.position.z,1]))
+        # Compute the transform
+        transform = np.zeros((4,4))
+        transform[0:3,0:3] = rot_mat
+        transform[0:4,3]   = camera_pos
+
+        # Get the numpy array of the vector to transform
+        pos_rel   = np.array([position.x,position.y,position.z,1]).reshape((-1, 1))
+
+        # Get the numpy array of the vector transformed
+        pos_world = np.dot(transform,pos_rel)
+        pos_world = pos_world[0:3]
+
+        # Fill position msg referred to the world
+        position_world.x = pos_world[0]
+        position_world.y = pos_world[1]
+        position_world.z = pos_world[2]
+
+        return position
+
     # Server function to compute 3D poses of centroids
     def handle_3d_poses(self,req):
 
@@ -247,20 +310,18 @@ class pose_estimator:
             # Compute the position of the detected points referred to camera optical frame
             poses_cable = self.poses_depth_model(response.cables[k],dist2D_pixels)
 
-            # Get camera pose (referred to the same frame as self.base_link)
-            cam_x = req.camera_pose.pose.position.x
-            cam_y = req.camera_pose.pose.position.y
-            cam_z = req.camera_pose.pose.position.z
-
             # Return poses response
             cable_3D = PoseArray()
-            cable_3D.header.frame_id = self.base_link   # TODO: check correctness
+            cable_3D.header.frame_id = self.base_link
             # Fill cable poses
             for k in range(len(poses_cable)):
                 response_pose = Pose()
-                response_pose.position.x = poses_cable[k][0] + cam_x + self.cam_to_opt_x
-                response_pose.position.y = poses_cable[k][1] + cam_y + self.cam_to_opt_y
-                response_pose.position.z = poses_cable[k][2] + cam_z + self.cam_to_opt_z
+                response_pose.orientation.w = 1
+                response_pose.position.x = poses_cable[k][0] + self.cam_to_opt_x
+                response_pose.position.y = poses_cable[k][1] + self.cam_to_opt_y
+                response_pose.position.z = poses_cable[k][2] + self.cam_to_opt_z
+                # response_pose.position   = self.ref_to_world(response_pose.position,
+                #                                             req.camera_pose)
                 cable_3D.poses.append(response_pose)
             
             # Add the cable poses to the list of all cables 
@@ -268,13 +329,14 @@ class pose_estimator:
 
         # Visualize the first cable on RViz
         if len(poses) > 0:
+
             self.pub_pa.publish(poses[0])
         
-        # Show a sample goal pose stamped value on rviz
-        goal_pose = PoseStamped()
-        goal_pose.header.frame_id = self.base_link_cam  # TODO: check correctness
-        goal_pose.pose = poses[0].poses[-1]
-        self.pub_ps.publish(goal_pose)
+            # # Show a sample goal pose stamped value on rviz
+            goal_pose = PoseStamped()
+            goal_pose.header.frame_id = self.base_link
+            goal_pose.pose = poses[0].poses[-1]
+            self.pub_ps.publish(goal_pose)
 
         # Print 3D poses computation time
         poses3D_time = rospy.get_time()-poses3D_time_start
