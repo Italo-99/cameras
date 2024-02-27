@@ -11,13 +11,12 @@
     <arg name="depth_topic"  	default="/camera/aligned_depth_to_color/image_raw"/>
     <arg name="color_topic"  	default="/camera/color/image_raw"/>
     <arg name="loop_rate"  		default="10"/>
-    <arg name="fx"  			default="609.9419555664062"/>  <!--default="606.4382934570312"/> --> 
-    <arg name="fy"  			default="608.6234130859375"/>  <!--default="605.0736083984375"/> --> 
-    <arg name="cx"  			default="324.0304870605469"/>  <!--default="325.06573486328125"/> --> 
-    <arg name="cy"  			default="246.2322540283203"/>  <!--default="244.5599822998047"/> --> 
+    <arg name="fx"  			default="609.9419555664062"/> <!--default="606.4382934570312"/>--> 
+    <arg name="fy"  			default="608.6234130859375"/> <!--default="605.0736083984375"/> -->  
+    <arg name="cx"  			default="324.0304870605469"/> <!--default="325.06573486328125"/>--> 
+    <arg name="cy"  			default="246.2322540283203"/> <!--default="244.5599822998047"/>-->    
     <arg name="optical_frame"  	default="camera_color_optical_frame"/>
     <arg name="base_link_cam"  	default="camera_base_link"/>
-    <arg name="base_link"  	    default="base_link"/>
     <arg name="detector"  		default="cables"/>	
     <arg name="pose_output"  	default="screen"/>
     <arg name="cal_factor"      default="1"/>
@@ -48,7 +47,6 @@
     	<param name="coppelia"  	                value="$(arg coppelia)"/>
 		<param name="optical_frame" type="string" 	value="$(arg optical_frame)"/>
 		<param name="base_link_cam" type="string" 	value="$(arg base_link_cam)"/>
-        <param name="base_link"  	type="string"   value="$(arg base_link)"/>
         <param name="detector"  	type="string" 	value="$(arg detector)"/>
         <param name="cal_factor"  	type="double"   value="$(arg cal_factor)"/>
         <param name="bias_factor"  	type="double"   value="$(arg bias_factor)"/>

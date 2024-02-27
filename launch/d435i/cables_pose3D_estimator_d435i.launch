@@ -9,7 +9,7 @@
     <!-- Image format args -->
     <arg name="image_width"     default="640"/>
     <arg name="image_height"    default="480"/>
-    <arg name="mask_th"         default="150"/>
+    <arg name="mask_th"         default="100"/>
     <arg name="steps_cable"     default="10"/>
     <!-- Print image detection results and log info-->
     <arg name="check_detection" default="false"/>
@@ -26,7 +26,7 @@
         <arg name="cal_factor"  	    value="$(arg cal_factor)"/>
         <arg name="bias_factor"  	    value="$(arg bias_factor)"/>
         <arg name="model"               value="$(arg model)"/>
-	    <arg name="coppelia"          value="$(arg coppelia)"/>
+	    <arg name="coppelia"            value="$(arg coppelia)"/>
     </include>
 
     <!-- FASTDLO Detection server  -->
