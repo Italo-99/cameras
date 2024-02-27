@@ -57,7 +57,7 @@ import  math
 import  numpy as np
 import  quaternion
 import  rospy,rospkg
-# from  scipy.interpolate       import interp1d
+from    scipy.interpolate       import interp1d
 from    scipy.spatial.transform import Rotation as R
 from    sensor_msgs.msg         import Image
 from    tf.transformations      import quaternion_from_euler
@@ -71,6 +71,7 @@ class pose_estimator:
         rospy.init_node('pose_estimator_node')
 
         # Initialize global class variables and params
+        self.depth_buffer_   = []
         self.depth_img_     = Image()
         self.color_img_     = Image()
         # self.depth_message_queue = []
@@ -96,7 +97,6 @@ class pose_estimator:
         tf_buffer = tf2_ros.Buffer()
         listener  = tf2_ros.TransformListener(tf_buffer)
         transform = TransformStamped()
-        time_now  = rospy.Time.now()
         while (not tf_rec) and (not rospy.is_shutdown()):
             try:
                 transform = tf_buffer.lookup_transform(self.base_link_cam, self.optical_frame, rospy.Time())
@@ -114,7 +114,6 @@ class pose_estimator:
         
         # Pose array publisher for RVIZ visualization purposes
         self.pub_pa = rospy.Publisher('/detection3D_poses', PoseArray,  queue_size=1)
-        self.pub_ps = rospy.Publisher('/grabbing_pose',     PoseStamped,queue_size=1)
 
         # Create a subscriber for the image aligned depth topic
         self.sub_al_depth_ = rospy.Subscriber(self.depth_topic_, Image, self.image_Aldepth_callback)
@@ -128,7 +127,6 @@ class pose_estimator:
             rospy.wait_for_service('/fastdlo')
             self.service_proxy = rospy.ServiceProxy('/fastdlo', Cables2D_Poses)
             rospy.loginfo('Connected to fastdlo server')
-
         else:
             rospy.logerror("No image detector specified")
             return
@@ -152,7 +150,6 @@ class pose_estimator:
         # Iterate over recevied centroids
         for centroid in centroids.poses:
 
-            # rospy.loginfo("Centroids received: [%s , %s]", centroid.position.x, centroid.position.y)
             # Pixel coordinate of the centroid
             u = centroid.position.x
             v = centroid.position.y
@@ -179,22 +176,20 @@ class pose_estimator:
                 new_pose[0] = poses[-1]
                 poses = poses[:-1]
             poses = np.append(poses,new_pose,axis=0)
-            # rospy.loginfo("Centroid 3D pose: x = %s, y = %s, z = %s", x,y,z)
-            """
-            # # Create an interpolation function for each dimension
-            # interp_func_x = interp1d(poses[0], poses[1], kind='cubic')
-            # interp_func_y = interp1d(poses[0], poses[1], kind='cubic')
-            # interp_func_z = interp1d(poses[0], poses[2], kind='cubic')
 
-            # # Define new x values for smoother curve
-            # x_smooth = np.linspace(min(poses[0]), max(poses[0]), int(len(poses)))
+        print(poses[:,0])
 
-            # # Interpolate y and z values using the new x values
-            # y_smooth = interp_func_y(x_smooth)
-            # z_smooth = interp_func_z(x_smooth)
+        # Create an interpolation function for each dimension
+        # interp_func_x = interp1d(poses[0], poses[1], kind='cubic')
+        interp_func_y = interp1d(poses[:][0], poses[:][1], kind='cubic')
+        interp_func_z = interp1d(poses[:][0], poses[:][2], kind='cubic')
 
-            # # Now, y_smooth and z_smooth contain the smoothed values
-            """
+        # Define new x values for smoother curve
+        x_smooth = np.linspace(min(poses[:][0]), max(poses[:][0]), int(len(poses)))
+
+        # Interpolate y and z values using the new x values
+        poses[:][1] = interp_func_y(x_smooth)
+        poses[:][2] = interp_func_z(x_smooth)
         
         # Check if first elements are not 0
         for k in range(len(poses)):
@@ -268,20 +263,24 @@ class pose_estimator:
         
         # Measure computational time
         start_time_depth_reading = rospy.get_time()
-        
-        # # Is it possible to uncomment the following code to filter last 5 depth images
-        # depth_img = Image()
-        # for i in range(len(self.depth_img_.data)):
-        #     for j in range(len(self.depth_img_.data)[0]):
-        #         for k in range(len(self.message_queue)):
-        #             depth_img[i][j] += self.message_queue[k].data[i][j]/len(self.message_queue)        
 
         # Compute the distances of each pixel
         # This data should be interpreted in this way:
             # 16UC1: 16 bits (2 bytes) compose a 16-bit unsigned int value 
             #        for a single pixel to express distance in mm
 
-        depth_img = self.depth_img_
+        # Is it possible to uncomment the following code to filter last 5 depth images
+        # depth_img = Image()
+        # for i in range(len(self.depth_buffer_.data)):
+        #     for j in range(len(self.depth_buffer_.data)[0]):
+        #         for k in range(len(self.depth_buffer_)):
+        #             depth_img[i][j] += self.depth_buffer_[k].data[i][j]/len(self.depth_buffer_)        
+
+        depth_img       = self.depth_buffer_[-1]
+        depth_img.data  = (self.depth_buffer_[k].data for k in range(len(self.depth_buffer_)-1))/len(self.depth_buffer_)
+        depth_img.data  = np.sum(self.depth_buffer_.data)/len(self.depth_buffer_)
+
+        # depth_img = self.depth_img_
 
         # If sim setup on Coppelia is on, convert depth image as range map
         if self.coppelia:
@@ -312,7 +311,7 @@ class pose_estimator:
 
             # Return poses response
             cable_3D = PoseArray()
-            cable_3D.header.frame_id = self.base_link
+            cable_3D.header.frame_id = self.base_link_cam
             # Fill cable poses
             for k in range(len(poses_cable)):
                 response_pose = Pose()
@@ -334,7 +333,7 @@ class pose_estimator:
         
             # # Show a sample goal pose stamped value on rviz
             goal_pose = PoseStamped()
-            goal_pose.header.frame_id = self.base_link
+            goal_pose.header.frame_id = self.base_link_cam
             goal_pose.pose = poses[0].poses[-1]
             self.pub_ps.publish(goal_pose)
 
@@ -349,12 +348,12 @@ class pose_estimator:
     # Callback to depth images
     def image_Aldepth_callback(self,msg):
 
-        self.depth_img_ = msg
+        # self.depth_img_ = msg
 
-        # # Add the incoming message to the queue
-        # self.message_queue.append(msg)
-        # # Keep only the latest 5 messages in the queue
-        # self.message_queue = self.message_queue[-5:]
+        # Keep only the latest 5 messages in the queue
+        self.depth_buffer_ = self.depth_buffer_[-4:]
+        # Add the incoming message to the queue
+        self.depth_buffer_.append(msg)
 
     # Callback to color images
     def image_color_callback(self,msg):
