@@ -16,7 +16,6 @@
     <arg name="cy"  			default="240.00"/> 
     <arg name="optical_frame"  	default="camera_color_optical_frame"/>
     <arg name="base_link_cam"  	default="camera_base_link"/>
-    <arg name="base_link"  	    default="base_link"/>
     <arg name="detector"  		default="cables"/>
     <arg name="pose_output"  	default="screen"/>
     <arg name="cal_factor"      default="1"/>
@@ -47,7 +46,6 @@
     	<param name="cy"	  	  	type="double"  	value="$(arg cy)"/>
 		<param name="optical_frame" type="string" 	value="$(arg optical_frame)"/>
 		<param name="base_link_cam" type="string" 	value="$(arg base_link_cam)"/>
-        <param name="base_link"  	type="string"   value="$(arg base_link)"/>
         <param name="detector"  	type="string" 	value="$(arg detector)"/>
         <param name="cal_factor"  	type="double"   value="$(arg cal_factor)"/>
         <param name="bias_factor"  	type="double"   value="$(arg bias_factor)"/>	

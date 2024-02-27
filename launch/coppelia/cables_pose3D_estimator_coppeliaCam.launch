@@ -18,7 +18,6 @@
     <!-- Sim setup -->
     <arg name="loop_rate"  		default="10"/>
     <arg name="detector"  		default="cables"/>
-    <arg name="base_link"  	    default="camera_base_link"/>
     <arg name="cam_bound_low"   default="0.175"/>
     <arg name="cam_bound_up" 	default="0.90"/>
 
@@ -32,7 +31,6 @@
         <arg name="bias_factor"     value="$(arg bias_factor)"/>
         <arg name="loop_rate"  		value="10"/>
         <arg name="detector"  		value="cables"/>
-        <arg name="base_link"  	    value="$(arg base_link)"/>
         <arg name="cam_bound_low"   value="$(arg cam_bound_low)"/>
         <arg name="cam_bound_up" 	value="$(arg cam_bound_up)"/>
 	</include>

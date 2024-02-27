@@ -57,7 +57,7 @@ import  math
 import  numpy as np
 import  quaternion
 import  rospy,rospkg
-from    scipy.interpolate       import interp1d
+from    scipy.interpolate       import interp1d,NearestNDInterpolator
 from    scipy.spatial.transform import Rotation as R
 from    sensor_msgs.msg         import Image
 from    tf.transformations      import quaternion_from_euler
@@ -71,10 +71,9 @@ class pose_estimator:
         rospy.init_node('pose_estimator_node')
 
         # Initialize global class variables and params
-        self.depth_buffer_   = []
+        self.depth_buffer_  = []
         self.depth_img_     = Image()
         self.color_img_     = Image()
-        # self.depth_message_queue = []
         self.depth_topic_   = rospy.get_param('~depth_topic')
         self.color_topic_   = rospy.get_param('~color_topic')
         loop_rate           = rospy.get_param('~loop_rate')
@@ -84,7 +83,6 @@ class pose_estimator:
         self.cy             = rospy.get_param('~cy')
         self.optical_frame  = rospy.get_param('~optical_frame')
         self.base_link_cam  = rospy.get_param('~base_link_cam')
-        self.base_link      = rospy.get_param('~base_link')
         detector            = rospy.get_param('~detector')
         self.cal_factor     = rospy.get_param('~cal_factor')
         self.bias_factor    = rospy.get_param('~bias_factor')
@@ -114,6 +112,7 @@ class pose_estimator:
         
         # Pose array publisher for RVIZ visualization purposes
         self.pub_pa = rospy.Publisher('/detection3D_poses', PoseArray,  queue_size=1)
+        self.pub_ps = rospy.Publisher('/example_grab_pose', PoseStamped,queue_size=1)
 
         # Create a subscriber for the image aligned depth topic
         self.sub_al_depth_ = rospy.Subscriber(self.depth_topic_, Image, self.image_Aldepth_callback)
@@ -177,20 +176,30 @@ class pose_estimator:
                 poses = poses[:-1]
             poses = np.append(poses,new_pose,axis=0)
 
-        print(poses[:,0])
-
+        """ INTERPOLATION: not working because it's on one axis
         # Create an interpolation function for each dimension
-        # interp_func_x = interp1d(poses[0], poses[1], kind='cubic')
-        interp_func_y = interp1d(poses[:][0], poses[:][1], kind='cubic')
-        interp_func_z = interp1d(poses[:][0], poses[:][2], kind='cubic')
+        # interp_func_z = interp1d(poses[:,1], poses[:,2], kind='cubic') -> GOOD
+        # interp_func_x = interp1d(poses[:,1], poses[:,0], kind='cubic') -> GOOD
+        # interp_func_y = interp1d(poses[:,0], poses[:,1], kind='cubic') -> NOT GOOD
+        # interp_func_z = interp1d(poses[:,0], poses[:,2], kind='cubic') -> NOT GOOD
 
         # Define new x values for smoother curve
-        x_smooth = np.linspace(min(poses[:][0]), max(poses[:][0]), int(len(poses)))
+        # x_smooth = np.linspace(min(poses[:,0]), max(poses[:,0]), int(len(poses))) -> NOT GOOD
+        # y_smooth = np.linspace(min(poses[:,1]), max(poses[:,1]), int(len(poses))) # -> GOOD
 
-        # Interpolate y and z values using the new x values
-        poses[:][1] = interp_func_y(x_smooth)
-        poses[:][2] = interp_func_z(x_smooth)
-        
+        # # Interpolate y and z values using the new x values
+        # poses[:,1] = interp_func_y(x_smooth) -> NOT GOOD
+        # poses[:,2] = interp_func_z(x_smooth) -> NOT GOOD
+        # poses[:,2] = interp_func_z(y_smooth)    # -> GOOD
+        # poses[:,0] = interp_func_x(y_smooth)    # -> GOOD
+        #"""
+  
+        # Interpolate along (y,z) for a smoother shape along x
+        # interp_func = NearestNDInterpolator(poses[:,1:],poses[:,0])
+        # z_smooth    = np.linspace(min(poses[:,2]), max(poses[:,2]), int(len(poses)))
+        # y_smooth    = np.linspace(min(poses[:,1]), max(poses[:,1]), int(len(poses)))
+        # poses[:,0]  = interp_func(y_smooth,z_smooth)
+
         # Check if first elements are not 0
         for k in range(len(poses)):
             if poses[0][0] < 0.01:
@@ -207,36 +216,20 @@ class pose_estimator:
         # Create a Pose message for tool0
         position_world = Point()
 
-        # Convert quaternion to numpy quaternion
-        # q = np.quaternion(  camera_pose.pose.orientation.w,
-        #                     camera_pose.pose.orientation.x,
-        #                     camera_pose.pose.orientation.y,
-        #                     camera_pose.pose.orientation.z)
-
-        # # Create a transform matrix
-        # transform           = np.eye(4)
-        # transform[0:3, 3]   = [camera_pose.pose.position.x, camera_pose.pose.position.y, camera_pose.pose.position.z]
-        # transform[0:3, 0:3] = np.array([[2 * (q.x * q.x + q.w * q.w) - 1,
-        #                                 2 * (q.x * q.y - q.z * q.w),
-        #                                 2 * (q.x * q.z + q.y * q.w)],
-        #                                 [2 * (q.x * q.y + q.z * q.w),
-        #                                 2 * (q.y * q.y + q.w * q.w) - 1,
-        #                                 2 * (q.y * q.z - q.x * q.w)],
-        #                                 [2 * (q.x * q.z - q.y * q.w),
-        #                                 2 * (q.y * q.z + q.x * q.w),
-        #                                 2 * (q.z * q.z + q.w * q.w) - 1]])
-
         # Compute the quaternion of child frame orientation
         q = np.array(([ camera_pose.pose.orientation.w,
                         camera_pose.pose.orientation.x,
                         camera_pose.pose.orientation.y,
                         camera_pose.pose.orientation.z]))
+
         # Compute the corresponding rotation matrix
         rot_mat = R.from_quat(q).as_matrix()
+
         # Compute the translation vector
         camera_pos = np.array(([ camera_pose.pose.position.x,
                                  camera_pose.pose.position.y,
                                  camera_pose.pose.position.z,1]))
+
         # Compute the transform
         transform = np.zeros((4,4))
         transform[0:3,0:3] = rot_mat
@@ -264,31 +257,30 @@ class pose_estimator:
         # Measure computational time
         start_time_depth_reading = rospy.get_time()
 
-        # Compute the distances of each pixel
-        # This data should be interpreted in this way:
-            # 16UC1: 16 bits (2 bytes) compose a 16-bit unsigned int value 
-            #        for a single pixel to express distance in mm
-
-        # Is it possible to uncomment the following code to filter last 5 depth images
-        # depth_img = Image()
-        # for i in range(len(self.depth_buffer_.data)):
-        #     for j in range(len(self.depth_buffer_.data)[0]):
-        #         for k in range(len(self.depth_buffer_)):
-        #             depth_img[i][j] += self.depth_buffer_[k].data[i][j]/len(self.depth_buffer_)        
-
-        depth_img       = self.depth_buffer_[-1]
-        depth_img.data  = (self.depth_buffer_[k].data for k in range(len(self.depth_buffer_)-1))/len(self.depth_buffer_)
-        depth_img.data  = np.sum(self.depth_buffer_.data)/len(self.depth_buffer_)
-
-        # depth_img = self.depth_img_
+        """ Compute the distances of each pixel
+            This data should be interpreted in this way:
+            16UC1: 16 bits (2 bytes) compose a 16-bit unsigned int value 
+                   for a single pixel to express distance in mm
+        """
 
         # If sim setup on Coppelia is on, convert depth image as range map
         if self.coppelia:
-            dist2D_pixels = CvBridge().imgmsg_to_cv2(depth_img, depth_img.encoding)
+            # depth_img     = self.depth_buffer_[-1]
+            dist2D_pixels = CvBridge().imgmsg_to_cv2(self.depth_img, self.depth_img.encoding)
             dist2D_pixels = 1000*(dist2D_pixels[:,:,2]/255*(self.cam_bound_up-self.cam_bound_low)+self.cam_bound_low)
         # If real setup is on, convert depth image as 16UC1 format    
         else:
-            dist2D_pixels = CvBridge().imgmsg_to_cv2(depth_img, depth_img.encoding)
+            # dist2D_pixels_np = np.zeros((self.depth_buffer_[-1].height,
+            #                          self.depth_buffer_[-1].width,
+            #                          len(self.depth_buffer_)))
+            # for k in range(len(self.depth_buffer_)):
+            #     dist2D_pixels_np[:,:,k] = CvBridge().imgmsg_to_cv2(
+            #                             self.depth_buffer_[k],
+            #                             self.depth_buffer_[k].encoding)
+            # dist2D_pixels = np.sum(dist2D_pixels_np,axis=2)/len(self.depth_buffer_)
+            dist2D_pixels = CvBridge().imgmsg_to_cv2(
+                                        self.depth_img_,
+                                        self.depth_img_.encoding)
 
         # Print depth reading time
         depth_reading_time = rospy.get_time()-start_time_depth_reading
@@ -348,12 +340,14 @@ class pose_estimator:
     # Callback to depth images
     def image_Aldepth_callback(self,msg):
 
-        # self.depth_img_ = msg
+        self.depth_img_ = msg
 
-        # Keep only the latest 5 messages in the queue
-        self.depth_buffer_ = self.depth_buffer_[-4:]
-        # Add the incoming message to the queue
-        self.depth_buffer_.append(msg)
+        """ BUFFER EXPERIMENT NOT WORKING
+            # Keep only the latest 5 messages in the buffer
+            self.depth_buffer_ = self.depth_buffer_[-4:]
+            # Add the incoming message to the queue
+            self.depth_buffer_.append(msg)
+        """
 
     # Callback to color images
     def image_color_callback(self,msg):
