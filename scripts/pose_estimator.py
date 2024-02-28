@@ -266,7 +266,7 @@ class pose_estimator:
         # If sim setup on Coppelia is on, convert depth image as range map
         if self.coppelia:
             # depth_img     = self.depth_buffer_[-1]
-            dist2D_pixels = CvBridge().imgmsg_to_cv2(self.depth_img, self.depth_img.encoding)
+            dist2D_pixels = CvBridge().imgmsg_to_cv2(self.depth_img_, self.depth_img_.encoding)
             dist2D_pixels = 1000*(dist2D_pixels[:,:,2]/255*(self.cam_bound_up-self.cam_bound_low)+self.cam_bound_low)
         # If real setup is on, convert depth image as 16UC1 format    
         else:
