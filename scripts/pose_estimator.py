@@ -59,6 +59,7 @@ import  quaternion
 import  rospy,rospkg
 from    scipy.interpolate       import interp1d,NearestNDInterpolator
 from    scipy.spatial.transform import Rotation as R
+from    std_msgs.msg            import Float64MultiArray,MultiArrayDimension
 from    sensor_msgs.msg         import Image
 from    tf.transformations      import quaternion_from_euler
 import  tf2_ros
@@ -89,6 +90,10 @@ class pose_estimator:
         self.coppelia       = rospy.get_param('~coppelia')
         self.cam_bound_low  = rospy.get_param('~cam_bound_low')
         self.cam_bound_up   = rospy.get_param('~cam_bound_up')
+
+        # Setup coppelia image array
+        if self.coppelia:
+            self.depth_img_ = Float64MultiArray()
         
         # Get transform from base_link_cam to optical_frame
         tf_rec = False
@@ -115,7 +120,11 @@ class pose_estimator:
         self.pub_ps = rospy.Publisher('/example_grab_pose', PoseStamped,queue_size=1)
 
         # Create a subscriber for the image aligned depth topic
-        self.sub_al_depth_ = rospy.Subscriber(self.depth_topic_, Image, self.image_Aldepth_callback)
+        if self.coppelia:
+            print("Setup coppelia depth array subscriber")
+            self.sub_al_depth_ = rospy.Subscriber('/coppelia/depth_array', Float64MultiArray, self.image_Aldepth_callback)
+        else:
+            self.sub_al_depth_ = rospy.Subscriber(self.depth_topic_, Image, self.image_Aldepth_callback)
 
         # Create a subscriber for the image aligned depth topic
         self.sub_color_ = rospy.Subscriber(self.color_topic_, Image, self.image_color_callback)
@@ -258,16 +267,16 @@ class pose_estimator:
         start_time_depth_reading = rospy.get_time()
 
         """ Compute the distances of each pixel
-            This data should be interpreted in this way:
+            This data should be interpreted (in the real case) in this way:
             16UC1: 16 bits (2 bytes) compose a 16-bit unsigned int value 
                    for a single pixel to express distance in mm
         """
 
         # If sim setup on Coppelia is on, convert depth image as range map
         if self.coppelia:
-            # depth_img     = self.depth_buffer_[-1]
-            dist2D_pixels = CvBridge().imgmsg_to_cv2(self.depth_img_, self.depth_img_.encoding)
-            dist2D_pixels = 1000*(dist2D_pixels[:,:,2]/255*(self.cam_bound_up-self.cam_bound_low)+self.cam_bound_low)
+            dist2D_pixels = 1000*np.flip(np.array(self.depth_img_.data).reshape(self.color_img_.height,self.color_img_.width),axis=(0,1))
+            # Got a shape of (img_width,img_height)
+            # dist2D_pixels = 1000*(dist2D_pixels/255*(self.cam_bound_up-self.cam_bound_low)+self.cam_bound_low)
         # If real setup is on, convert depth image as 16UC1 format    
         else:
             # dist2D_pixels_np = np.zeros((self.depth_buffer_[-1].height,

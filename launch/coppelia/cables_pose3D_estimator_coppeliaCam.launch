@@ -8,7 +8,7 @@
     <!-- Image format args -->
     <arg name="image_width"     default="640"/>
     <arg name="image_height"    default="480"/>
-    <arg name="mask_th"         default="50"/>
+    <arg name="mask_th"         default="100"/>
     <arg name="steps_cable"     default="10"/>
     <!-- Print image detection results and log info-->
     <arg name="check_detection" default="false"/>
@@ -29,8 +29,8 @@
         <arg name="pose_output"  	value="$(arg log_output)"/>
         <arg name="cal_factor"  	value="$(arg cal_factor)"/>
         <arg name="bias_factor"     value="$(arg bias_factor)"/>
-        <arg name="loop_rate"  		value="10"/>
-        <arg name="detector"  		value="cables"/>
+        <arg name="loop_rate"  		value="$(arg loop_rate)"/>
+        <arg name="detector"  		value="$(arg detector)"/>
         <arg name="cam_bound_low"   value="$(arg cam_bound_low)"/>
         <arg name="cam_bound_up" 	value="$(arg cam_bound_up)"/>
 	</include>

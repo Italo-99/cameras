@@ -10,8 +10,8 @@
     <arg name="depth_topic"  	default="coppelia/depth_image"/>
     <arg name="color_topic"  	default="coppelia/color_image"/>
     <arg name="loop_rate"  		default="10"/>
-    <arg name="fx"  			default="532.5694343521657"/> 
-    <arg name="fy"  			default="399.4270757641243"/>   <!-- TODO: check correctness-->
+    <arg name="fx"  			default="614.7142806307731"/> 
+    <arg name="fy"  			default="614.7142806307731"/>   <!-- TODO: check correctness-->
     <arg name="cx"  			default="320.00"/>
     <arg name="cy"  			default="240.00"/> 
     <arg name="optical_frame"  	default="camera_color_optical_frame"/>
