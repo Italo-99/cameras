@@ -276,8 +276,12 @@ class pose_estimator:
         # If sim setup on Coppelia is on, convert depth image as range map
         if self.coppelia:
             dist2D_pixels = 1000*np.flip(np.array(self.depth_img_.data).reshape(self.color_img_.height,self.color_img_.width),axis=(0,1))
-            # Got a shape of (img_width,img_height)
-            # dist2D_pixels = 1000*(dist2D_pixels/255*(self.cam_bound_up-self.cam_bound_low)+self.cam_bound_low)
+            # dist2D_pixels = 255-255*(dist2D_pixels-0.15)/0.75
+            # cv2.imshow("Coppelia depth",dist2D_pixels)
+            # cv2.waitKey(5000)                  # Wait 5 seconds than close
+            # cv2.destroyAllWindows()
+            # print(np.shape(dist2D_pixels))
+            dist2D_pixels = np.transpose(dist2D_pixels)
         # If real setup is on, convert depth image as 16UC1 format    
         else:
             # dist2D_pixels_np = np.zeros((self.depth_buffer_[-1].height,
