@@ -175,14 +175,13 @@ class pose_estimator:
 
             # Compute the poses -> REFERRED TO CAMERA_BASE_LINK ORIENTATION
             x = +d*tz/norm  # x = d*tx/norm if optical frame is oriented as camera_base_link
-            y = -d*ty/norm  # y = d*ty/norm if optical frame is oriented as camera_base_link
-            z = -d*tx/norm  # z = d*tz/norm if optical frame is oriented as camera_base_link
+            y = -d*tx/norm  # y = d*ty/norm if optical frame is oriented as camera_base_link
+            z = -d*ty/norm  # z = d*tz/norm if optical frame is oriented as camera_base_link
 
             # Add the new pose, check if is not [0.,0.,0.] -> x distance is sufficient for this check
             new_pose = np.array([x,y,z]).reshape(1,3)
-            if new_pose[0][0] < 0.01 and (len(poses)!=0):
+            if (new_pose[0][0] < 0.01) and (len(poses)!=0):
                 new_pose[0] = poses[-1]
-                poses = poses[:-1]
             poses = np.append(poses,new_pose,axis=0)
 
         """ INTERPOLATION: not working because it's on one axis
@@ -203,11 +202,13 @@ class pose_estimator:
         # poses[:,0] = interp_func_x(y_smooth)    # -> GOOD
         #"""
   
+        """ INTERPOLATION: not working even if on more axis
         # Interpolate along (y,z) for a smoother shape along x
-        # interp_func = NearestNDInterpolator(poses[:,1:],poses[:,0])
-        # z_smooth    = np.linspace(min(poses[:,2]), max(poses[:,2]), int(len(poses)))
-        # y_smooth    = np.linspace(min(poses[:,1]), max(poses[:,1]), int(len(poses)))
-        # poses[:,0]  = interp_func(y_smooth,z_smooth)
+        interp_func = NearestNDInterpolator(poses[:,1:],poses[:,0])
+        z_smooth    = np.linspace(min(poses[:,2]), max(poses[:,2]), int(len(poses)))
+        y_smooth    = np.linspace(min(poses[:,1]), max(poses[:,1]), int(len(poses)))
+        poses[:,0]  = interp_func(y_smooth,z_smooth)
+        """
 
         # Check if first elements are not 0
         for k in range(len(poses)):
@@ -287,9 +288,9 @@ class pose_estimator:
             #                             self.depth_buffer_[k],
             #                             self.depth_buffer_[k].encoding)
             # dist2D_pixels = np.sum(dist2D_pixels_np,axis=2)/len(self.depth_buffer_)
-            dist2D_pixels = CvBridge().imgmsg_to_cv2(
+            dist2D_pixels = np.transpose(CvBridge().imgmsg_to_cv2(
                                         self.depth_img_,
-                                        self.depth_img_.encoding)
+                                        self.depth_img_.encoding))
 
         # Print depth reading time
         depth_reading_time = rospy.get_time()-start_time_depth_reading
@@ -327,6 +328,10 @@ class pose_estimator:
             # Add the cable poses to the list of all cables 
             poses.append(cable_3D)
 
+        # Print 3D poses computation time
+        poses3D_time = rospy.get_time()-poses3D_time_start
+        rospy.loginfo("Pose 3D computation time: %s",poses3D_time)
+
         # Visualize the first cable on RViz
         if len(poses) > 0:
 
@@ -337,10 +342,6 @@ class pose_estimator:
             goal_pose.header.frame_id = self.base_link_cam
             goal_pose.pose = poses[0].poses[-1]
             self.pub_ps.publish(goal_pose)
-
-        # Print 3D poses computation time
-        poses3D_time = rospy.get_time()-poses3D_time_start
-        rospy.loginfo("Pose 3D computation time: %s",poses3D_time)
 
         rospy.loginfo("End detection")
 

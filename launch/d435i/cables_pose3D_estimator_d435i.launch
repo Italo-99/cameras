@@ -1,18 +1,20 @@
 <launch>
 
     <!-- RViz user args -->
-    <arg name="rviz"             default="true"/>
-    <arg name="rviz_path"  	     default="$(find cameras)/rviz/d435i_cables"/>
-    <arg name="pub_map_tf" 		 default="true"/>
-    <arg name="model"            default="true"/>
-    <arg name="coppelia"         default="false"/>
+    <arg name="rviz"            default="true"/>
+    <arg name="rviz_path"  	    default="$(find cameras)/rviz/d435i_cables"/>
+    <arg name="pub_map_tf" 		default="true"/>
+    <arg name="model"           default="true"/>
+    <arg name="coppelia"        default="false"/>
     <!-- Image format args -->
     <arg name="image_width"     default="640"/>
     <arg name="image_height"    default="480"/>
-    <arg name="mask_th"         default="100"/>
+    <arg name="mask_th"         default="50"/>
     <arg name="steps_cable"     default="10"/>
+    <arg name="optical_frame"  	default="camera_color_optical_frame"/>
+    <arg name="base_link_cam"  	default="camera_base_link"/>
     <!-- Print image detection results and log info-->
-    <arg name="check_detection" default="false"/>
+    <arg name="check_detection" default="true"/>
     <arg name="log_output"      default="screen"/>
     <arg name="cal_factor"      default="1"/>
     <arg name="bias_factor"     default="0"/>
@@ -27,6 +29,8 @@
         <arg name="bias_factor"  	    value="$(arg bias_factor)"/>
         <arg name="model"               value="$(arg model)"/>
 	    <arg name="coppelia"            value="$(arg coppelia)"/>
+        <arg name="optical_frame"  	    value="$(arg optical_frame)"/>
+        <arg name="base_link_cam"  	    value="$(arg base_link_cam)"/>
     </include>
 
     <!-- FASTDLO Detection server  -->
