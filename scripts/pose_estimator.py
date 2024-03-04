@@ -42,10 +42,10 @@
 """ CAMERA ESTEEMATOR NODE
 This node executes three main activities:
 1 - it's a subscriber to camera images, color and aligned depth
-2 - it's a client to fastdlo detector service, which returns pixel coordinates (u,v) 
-    of the splines of the detected cables
-3 - it's a server which receives a camera pose and return (x,y,z) value of the 
-    splines of the detected cables, together with received pixel coordinates (u,v)
+2 - it's a client to an object detector service, which returns pixel coordinates (u,v) 
+    of the splines of the detected groups of centroids
+3 - it's a server which receives a camera pose and return (x,y,z) values of the 
+    detected groups of centroids, together with received pixel coordinates (u,v)
 """
 
 from    cables_detection.srv    import Cables2D_Poses
@@ -139,7 +139,7 @@ class pose_estimator:
             rospy.logerror("No image detector specified")
             return
 
-        # Create a server that receives
+        # Create a server that receives pixels values and computes 3D poses
         rospy.Service('pose3D_estimator', Obj3D_Poses, self.handle_3d_poses)
         rospy.loginfo('Ready to compute 3D poses')
 
@@ -153,9 +153,10 @@ class pose_estimator:
     # Depth distance model computation
     def poses_depth_model(self,centroids,dist2D_pixels):
 
+        # Initialize poses vector
         poses = np.empty((0,3))
 
-        # Iterate over recevied centroids
+        # Iterate over received centroids: apply homographic model to compute 3D poses
         for centroid in centroids.poses:
 
             # Pixel coordinate of the centroid
@@ -220,7 +221,7 @@ class pose_estimator:
         # Return results
         return poses
     
-    # Transform a position from the camera_base_link frame to world frame reference
+    # Transform a position from the camera_base_link frame to world frame reference -> NOT WORKING
     def ref_to_world(self,position,camera_pose):
 
         # Create a Pose message for tool0
@@ -278,6 +279,7 @@ class pose_estimator:
             dist2D_pixels = np.transpose(1000*np.flip(np.array(self.depth_img_.data).reshape(self.color_img_.height,self.color_img_.width),axis=(0,1)))
         # If real setup is on, convert depth image as 16UC1 format    
         else:
+            """ FOLLOWING CODE (for depth data averaging) NOT WORKING
             # dist2D_pixels_np = np.zeros((self.depth_buffer_[-1].height,
             #                          self.depth_buffer_[-1].width,
             #                          len(self.depth_buffer_)))
@@ -286,6 +288,7 @@ class pose_estimator:
             #                             self.depth_buffer_[k],
             #                             self.depth_buffer_[k].encoding)
             # dist2D_pixels = np.sum(dist2D_pixels_np,axis=2)/len(self.depth_buffer_)
+            """
             dist2D_pixels = np.transpose(CvBridge().imgmsg_to_cv2(
                                         self.depth_img_,
                                         self.depth_img_.encoding))
@@ -301,36 +304,34 @@ class pose_estimator:
         # Measure init 3d pose computation time
         poses3D_time_start = rospy.get_time()
 
-        # Iterate over detected cables
+        # Iterate over detected centroids
         poses = []
 
-        for k in range(len(response.cables)):
+        for k in range(len(response.centroids)):
 
             # Compute the position of the detected points referred to camera optical frame
-            poses_cable = self.poses_depth_model(response.cables[k],dist2D_pixels)
+            poses_centroids = self.poses_depth_model(response.centroids[k],dist2D_pixels)
 
             # Return poses response
-            cable_3D = PoseArray()
-            cable_3D.header.frame_id = self.base_link_cam
-            # Fill cable poses
-            for k in range(len(poses_cable)):
+            centroids_3D = PoseArray()
+            centroids_3D.header.frame_id = self.base_link_cam
+            # Fill centroids poses
+            for k in range(len(poses_centroids)):
                 response_pose = Pose()
                 response_pose.orientation.w = 1
-                response_pose.position.x = poses_cable[k][0] + self.cam_to_opt_x
-                response_pose.position.y = poses_cable[k][1] + self.cam_to_opt_y
-                response_pose.position.z = poses_cable[k][2] + self.cam_to_opt_z
-                # response_pose.position   = self.ref_to_world(response_pose.position,
-                #                                             req.camera_pose)
-                cable_3D.poses.append(response_pose)
+                response_pose.position.x = poses_centroids[k][0] + self.cam_to_opt_x
+                response_pose.position.y = poses_centroids[k][1] + self.cam_to_opt_y
+                response_pose.position.z = poses_centroids[k][2] + self.cam_to_opt_z
+                centroids_3D.poses.append(response_pose)
             
-            # Add the cable poses to the list of all cables 
-            poses.append(cable_3D)
+            # Add the centroids poses to the list of all centroids 
+            poses.append(centroids_3D)
 
         # Print 3D poses computation time
         poses3D_time = rospy.get_time()-poses3D_time_start
         rospy.loginfo("Pose 3D computation time: %s",poses3D_time)
 
-        # Visualize the first cable on RViz
+        # Visualize the first group of centroids on RViz
         if len(poses) > 0:
 
             self.pub_pa.publish(poses[0])
@@ -343,7 +344,7 @@ class pose_estimator:
 
         rospy.loginfo("End detection")
 
-        return poses,response.cables
+        return poses,response.centroids
 
     # Callback to depth images
     def image_Aldepth_callback(self,msg):
