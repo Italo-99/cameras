@@ -218,9 +218,44 @@ class pose_estimator:
             else:
                 break
 
+        # Remove outliers in poses array
+        # poses = self.remove_outliers(poses)
+
         # Return results
         return poses
     
+    # Remove outliers from a preempted group of data
+    def remove_outliers(self,data, threshold=1.5):
+        """
+        Remove outliers from a list of numerical data using the IQR method.
+        
+        Args:
+            data (list or numpy array): List of numerical data.
+            threshold (float): Multiplier for the IQR. Default is 1.5.
+            
+        Returns:
+            list: Filtered list of data without outliers.
+        """
+        
+        # Convert data to numpy array
+        # data = np.array(data)
+        
+        # Calculate quartiles (Q1 and Q3)
+        Q1 = np.percentile(data,25,axis = 0)
+        Q3 = np.percentile(data,75,axis = 0)
+        
+        # Calculate IQR
+        IQR = Q3 - Q1
+        
+        # Define lower and upper bounds for outliers
+        lower_bound = Q1 - threshold * IQR
+        upper_bound = Q3 + threshold * IQR
+        
+        # Filter data to remove outliers
+        filtered_data = [x for x in data if x[0] >= lower_bound and x[0] <= upper_bound]
+        
+        return filtered_data
+
     # Transform a position from the camera_base_link frame to world frame reference -> NOT WORKING
     def ref_to_world(self,position,camera_pose):
 
