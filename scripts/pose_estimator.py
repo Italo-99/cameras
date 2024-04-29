@@ -55,7 +55,7 @@ import  cv2
 from    geometry_msgs.msg       import Point,PoseArray,PoseStamped,Pose,TransformStamped
 import  math
 import  numpy as np
-import  quaternion
+# import  quaternion
 import  rospy,rospkg
 from    scipy.interpolate       import interp1d,NearestNDInterpolator
 from    scipy.spatial.transform import Rotation as R
@@ -250,9 +250,9 @@ class pose_estimator:
         # Define lower and upper bounds for outliers
         lower_bound = Q1 - threshold * IQR
         upper_bound = Q3 + threshold * IQR
-        
+
         # Filter data to remove outliers
-        filtered_data = [x for x in data if x[0] >= lower_bound and x[0] <= upper_bound]
+        filtered_data = [x for x in data if x[2] >= lower_bound[2] and x[2] <= upper_bound[2]]
         
         return filtered_data
 
