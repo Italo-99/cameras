@@ -1,0 +1,13 @@
+# Parameters to launch an image saver with the Intel RealSense d435 camera
+
+depth:                true
+frequency:            1.0
+
+depth_path:           "/src/cameras/images/d435"
+color_path:           "/src/cameras/images/d435"
+
+depth_image_topic:    "/camera/aligned_depth_to_color/image_raw"
+color_image_topic:    "/camera/color/image_raw"
+
+counter_limit_color:  10
+counter_limit_depth:  10

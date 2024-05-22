@@ -4,8 +4,8 @@
 <package format="3">
   <name>cameras</name>
   <version>1.2.4</version>
-  <description> Pkg container of useful ROS1 files for smart cameras used for Italo Almirante's internship project</description>
-  <maintainer email="255778@studenti.unimore.it">Italo Almirante</maintainer>
+  <description> Pkg container of useful ROS1 files to enable common smart cameras</description>
+  <maintainer email="italo.almirante@unimore.it">Italo Almirante</maintainer>
   <license>Apache License 2.0</license>
 
   <url>http://ros.org/wiki/foo_core</url>
@@ -13,6 +13,7 @@
 
   <buildtool_depend>catkin</buildtool_depend>
 
+  <depend>ar_track_alvar </depend>
   <depend>cables_detection </depend>
   <depend>cv_bridge </depend>
   <depend>fiducial_msgs</depend>
@@ -26,4 +27,5 @@
   <export>
 
   </export>
+
 </package>

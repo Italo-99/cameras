@@ -5,7 +5,8 @@ project(cameras)
 add_compile_options(-std=c++11)
 
 find_package(catkin REQUIRED COMPONENTS
-  cables_detection    # MY CUSTOM PKG
+  ar_track_alvar
+  cables_detection
   cv_bridge
   fiducial_msgs
   geometry_msgs
@@ -31,6 +32,8 @@ generate_messages(
 
 catkin_package(
   INCLUDE_DIRS include
+  LIBRARIES image_saver
+  CATKIN_DEPENDS roscpp std_msgs sensor_msgs
 )
 
 include_directories(
@@ -38,7 +41,12 @@ include_directories(
   ${catkin_INCLUDE_DIRS}
 )
 
+add_library(
+  image_saver
+  src/image_saver.cpp
+)
+
 # Add image saver class node
-add_executable(image_saver src/image_saver.cpp)
-target_link_libraries(image_saver ${catkin_LIBRARIES})
-add_dependencies(image_saver ${catkin_EXPORTED_TARGETS})
+add_executable(d435_image_saver src/d435_image_saver.cpp)
+target_link_libraries(d435_image_saver image_saver ${catkin_LIBRARIES})
+# add_dependencies(image_saver ${catkin_EXPORTED_TARGETS})
