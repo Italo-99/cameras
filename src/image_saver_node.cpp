@@ -43,7 +43,7 @@
 
 int main(int argc, char **argv)
 {
-    ros::init(argc, argv, "d435_image_saver");
+    ros::init(argc, argv, "image_saver_node");
 
     ImageSaver image_saver;
     image_saver.spinner();

@@ -47,6 +47,6 @@ add_library(
 )
 
 # Add image saver class node
-add_executable(d435_image_saver src/d435_image_saver.cpp)
-target_link_libraries(d435_image_saver image_saver ${catkin_LIBRARIES})
+add_executable(image_saver_node src/image_saver_node.cpp)
+target_link_libraries(image_saver_node image_saver ${catkin_LIBRARIES})
 # add_dependencies(image_saver ${catkin_EXPORTED_TARGETS})
