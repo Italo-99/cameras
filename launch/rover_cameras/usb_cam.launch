@@ -1,0 +1,37 @@
+<launch>
+
+  <!-- Publish tf transform -->
+  <arg name="pub_tf"              default="true"/>
+  <arg name="parent_tf"           default="map"/>
+
+  <!-- Node args -->
+  <arg name="node_name"           default="usb_cam"/>
+
+  <!-- Pass cam params -->
+  <arg name="video_device" default="/dev/video12" />
+  <arg name="image_width"  default="640" />
+  <arg name="image_height" default="480" />
+
+  <!-- Launch usb cam node -->
+  <node name="$(arg node_name)" pkg="usb_cam" type="usb_cam_node" output="screen" >
+    <param name="video_device" value="$(arg video_device)" />
+    <param name="image_width" value="$(arg image_width)" />
+    <param name="image_height" value="$(arg image_height)" />
+    <param name="pixel_format" value="yuyv" />
+    <param name="color_format" value="yuv422p" />
+    <param name="camera_frame_id" value="usb_cam" />
+    <param name="io_method" value="mmap"/>
+  </node>
+
+  <!-- Launch save image service -->
+  <node name="$(anon save_image_service)" pkg="sirio_utilities" type="camera_image_saver.py"/>
+
+  <!-- Launch encoder -->
+  <!-- <node name="$(anon encoder)" pkg="sirio_utilities" type="encode_camera.py"/> -->
+
+  <!-- Publish transform -->
+  <node if="$(arg pub_tf)" pkg="tf2_ros" type="static_transform_publisher" name="sirio_t265_tf_publisher"
+        args="0 -0.1 0 0 0 0 1 $(arg parent_tf) usbcam_link"/>
+
+
+</launch>

@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<launch>
+
+    <arg name="camera_topic" default="/usb_cam/image_raw"/>
+
+    <node name="$(anon encoder)" pkg="sirio_utilities" type="encode_camera.py" output="screen">
+        <!-- Pass the topic names as parameters -->
+        <param name="image_topic" value="$(arg camera_topic)"/>
+        <param name="compressed_topic" value="$(arg camera_topic)/compressed_encoder"/>
+    </node>
+</launch>

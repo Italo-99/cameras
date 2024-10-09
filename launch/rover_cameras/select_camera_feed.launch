@@ -1,0 +1,45 @@
+<launch>
+
+    <arg name="rviz"        default="false"/>
+
+    <!-- Camera feed selection args -->
+    <arg name="d435"        default="false" />
+    <arg name="d435i"       default="false" />
+    <arg name="zed"         default="false" />
+    <arg name="log_1"       default="false" />
+    <arg name="log_2"       default="false" />
+    <arg name="t265"        default="false" />
+
+    <!-- Launch decoder -->
+    <!-- <node name="$(anon decoder)" pkg="sirio_utilities" type="decode_camera.py"/> -->
+
+    <node if="$(arg rviz)" name="rviz" pkg="rviz" type="rviz" args="-d $(find sirio_utilities)/config/rviz/cameras.rviz" required="true" />
+
+    <group unless="$(arg rviz)">
+        <!-- Launch rqt_image_view for each camera -->
+        <node if="$(arg d435)" pkg="rqt_image_view" type="rqt_image_view" name="d435_color_view" output="screen"
+            args="/d435/color/image_raw/compressed" />
+        <node if="$(arg d435i)" pkg="rqt_image_view" type="rqt_image_view" name="d435i_color_view" output="screen"
+            args="/d435i/color/image_raw/compressed" />
+        <node if="$(arg t265)" pkg="rqt_image_view" type="rqt_image_view" name="t265_fisheye1_view" output="screen"
+            args="/t265/t265/fisheye1/image_raw/compressed" />
+        <node if="$(arg t265)" pkg="rqt_image_view" type="rqt_image_view" name="t265_fisheye2_view" output="screen"
+            args="/t265/t265/fisheye2/image_raw/compressed" />
+        <node if="$(arg log_1)" pkg="rqt_image_view" type="rqt_image_view" name="log_1_view" respawn="false" output="screen"
+            args="/log_1/image_raw/compressed">
+            <remap from="image" to="/log_1/image_raw/compressed"/>
+            <param name="autosize" value="true" />
+        </node>
+        <node if="$(arg log_2)" pkg="rqt_image_view" type="rqt_image_view" name="log_2_view" respawn="false" output="screen"
+            args="/log_2/image_raw/compressed">
+            <remap from="image" to="/log_2/image_raw/compressed"/>
+            <param name="autosize" value="true" />
+        </node>
+        <node if="$(arg zed)" pkg="rqt_image_view" type="rqt_image_view" name="zed2_color_right_view" output="screen"
+            args="/zed/right/image_raw/compressed" />        
+        <node if="$(arg zed)" pkg="rqt_image_view" type="rqt_image_view" name="zed2_color_left_view" output="screen"
+            args="/zed/left/image_raw/compressed" />
+    </group>
+
+</launch>
+ 

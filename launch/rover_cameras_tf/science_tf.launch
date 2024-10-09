@@ -1,0 +1,40 @@
+<?xml version="1.0"?>
+<launch>
+    <!-- Load parameters from YAML file -->
+    <!-- <rosparam file="$(find sirio_utilities)/config/camera_positions/camera_locations.yaml"
+    command="load"/> -->
+
+
+    <!-- Arg for rviz -->
+    <arg name="rviz"        default="true"/>
+    
+    <!-- Args for camera to location mapping -->
+    <arg name="antenna"         default="d435" />
+    <arg name="front_bottom"    default="log_2" />
+    <arg name="front_top"       default="zed" />
+    <arg name="right"           default="t265" />
+    <arg name="back_top"        default="log_1" />
+
+    <!-- Transform from sirio_base_link to antenna -->
+    <node pkg="tf2_ros" type="static_transform_publisher" name="sirio_antenna_tf_publisher"
+        args="-0.298 0.265 0.579 0 0 0 1 sirio_base_link $(arg antenna)_link" />
+
+    <!-- Transform from sirio_base_link to front_bottom -->
+    <node pkg="tf2_ros" type="static_transform_publisher" name="sirio_front_bottom_tf_publisher"
+        args="0.298 0 0.045 0 0 0 1 sirio_base_link $(arg front_bottom)_link" />
+
+    <!-- Transform from sirio_base_link to front_top -->
+    <node pkg="tf2_ros" type="static_transform_publisher" name="sirio_front_top_tf_publisher"
+        args="0.298 0 0.239 0 0 0 1 sirio_base_link $(arg front_top)_link" />
+
+    <!-- Transform from sirio_base_link to right -->
+    <node pkg="tf2_ros" type="static_transform_publisher" name="sirio_right_tf_publisher"
+        args="0 -0.265 0.239 0 0 -0.70682518 0.70738827 sirio_base_link $(arg right)_link" />
+
+    <!-- Transform from sirio_base_link to back_top -->
+    <node pkg="tf2_ros" type="static_transform_publisher" name="sirio_back_top_tf_publisher"
+        args="-0.298 0 0.239 0 0 0.999999683 0.000796326711 sirio_base_link $(arg back_top)_link" />
+    <!-- Launch RViz -->
+    <node if="$(arg rviz)" name="rviz" pkg="rviz" type="rviz" args="-d $(find sirio_utilities)/config/rviz/cameras_tf.rviz" required="true" />
+
+</launch>
