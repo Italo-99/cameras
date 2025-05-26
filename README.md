@@ -20,3 +20,12 @@ IMAGE SAVER:
     roslaunch cameras d435_image_saver.launch
 
   Remember to check the   
+
+
+# Notes
+
+A ROS2 Humble version of this packages is under development.
+
+Use the following terminal command to see the connected devices to your laptop:
+
+        v4l2-ctl --list-devices
